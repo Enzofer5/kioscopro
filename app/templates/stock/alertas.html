@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, thumb, vacio %}
+{% block title %}{{ 'Productos agotados' if tipo == 'agotados' else 'Productos con bajo stock' }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ self.title() }}</h1><p>{{ 'Productos activos sin unidades disponibles.' if tipo == 'agotados' else 'Productos activos con stock actual menor o igual al stock mínimo.' }}</p></div>
+  <div class="page-actions">
+    <button type="button" class="btn" data-action="print">{{ icon('printer','sm') }} Imprimir lista</button>
+    {% if current_user.tiene_permiso('compras.gestionar') %}<a href="{{ url_for('compras.nueva') }}" class="btn btn-primary">{{ icon('shopping-bag','sm') }} Nueva compra</a>{% endif %}
+  </div>
+</div>
+<nav class="tabs no-print">
+  <a href="{{ url_for('stock.alertas', tipo='bajo') }}" class="{{ 'active' if tipo == 'bajo' }}">Bajo stock <span class="badge badge-warning">{{ bajo }}</span></a>
+  <a href="{{ url_for('stock.alertas', tipo='agotados') }}" class="{{ 'active' if tipo == 'agotados' }}">Agotados <span class="badge badge-danger">{{ agotados }}</span></a>
+</nav>
+<div class="card">
+{% if not productos %}
+  {{ vacio("¡Todo en orden!", "No hay productos en esta lista.", "circle-check") }}
+{% else %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Producto</th><th class="hide-sm">Categoría</th><th class="num">Stock</th><th class="num">Mínimo</th><th class="num">Faltante</th><th class="no-print"></th></tr></thead>
+    <tbody>
+    {% for p in productos %}
+      <tr>
+        <td><div class="prod-cell">{{ thumb(p) }}<div><b><a href="{{ url_for('productos.detalle', producto_id=p.id) }}">{{ p.nombre }}</a></b><span class="mono">{{ p.codigo_barras or '' }}</span></div></div></td>
+        <td class="hide-sm">{{ p.categoria.nombre }}</td>
+        <td class="num"><b class="{{ 'text-danger' if p.agotado else 'text-warning' }}">{{ p.stock_actual|cantidad }}</b></td>
+        <td class="num">{{ p.stock_minimo|cantidad }}</td>
+        <td class="num">{{ (p.stock_minimo - p.stock_actual)|cantidad if p.stock_minimo > p.stock_actual else '—' }}</td>
+        <td class="actions no-print">{% if current_user.tiene_permiso('stock.ajustar') %}<a class="btn btn-sm" href="{{ url_for('stock.movimiento', producto_id=p.id) }}">{{ icon('plus','sm') }} Cargar</a>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+{% endif %}
+</div>
+{% endblock %}

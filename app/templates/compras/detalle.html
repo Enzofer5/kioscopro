@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Compra #{{ compra.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Compra #{{ compra.id }}</h1><p>{{ compra.proveedor.razon_social }} · {{ compra.fecha|solo_fecha }}</p></div>
+  <div class="page-actions">
+    <a href="{{ url_for('compras.lista') }}" class="btn btn-ghost" data-action="back">{{ icon('arrow-left','sm') }} Volver</a>
+    <button type="button" class="btn" data-action="print">{{ icon('printer','sm') }} Imprimir</button>
+    <a href="{{ url_for('compras.nueva') }}" class="btn btn-primary">{{ icon('plus','sm') }} Nueva compra</a>
+  </div>
+</div>
+<div class="grid grid-main">
+  <div class="card">
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio unit.</th><th class="num">Subtotal</th></tr></thead>
+      <tbody>{% for d in compra.detalles %}
+        <tr><td><a href="{{ url_for('productos.detalle', producto_id=d.producto_id) }}">{{ d.producto.nombre }}</a></td>
+        <td class="num">{{ d.cantidad|cantidad }}</td><td class="num">{{ d.precio_unitario|moneda }}</td><td class="num"><b>{{ d.subtotal|moneda }}</b></td></tr>
+      {% endfor %}</tbody>
+      <tfoot><tr><td colspan="3" class="right">TOTAL</td><td class="num">{{ compra.total|moneda }}</td></tr></tfoot>
+    </table></div>
+  </div>
+  <div class="card"><div class="card-body">
+    <dl class="dl">
+      <dt>Proveedor</dt><dd><a href="{{ url_for('proveedores.detalle', proveedor_id=compra.proveedor_id) }}">{{ compra.proveedor.razon_social }}</a></dd>
+      <dt>CUIT</dt><dd class="mono">{{ compra.proveedor.cuit or '—' }}</dd>
+      <dt>Fecha</dt><dd>{{ compra.fecha|solo_fecha }}</dd>
+      <dt>Comprobante</dt><dd class="mono">{{ compra.numero_comprobante or '—' }}</dd>
+      <dt>Registró</dt><dd>{{ compra.usuario.nombre_completo }}</dd>
+      <dt>Cargada el</dt><dd>{{ compra.creado_en|fecha }}</dd>
+      <dt>Observaciones</dt><dd>{{ compra.observaciones or '—' }}</dd>
+    </dl>
+  </div></div>
+</div>
+{% endblock %}

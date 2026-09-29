@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, campo %}
+{% set ed = usuario is not none %}
+{% macro v(c) -%}{{ form.get(c) if form.get(c) is not none else ((usuario[c] or '') if ed else '') }}{%- endmacro %}
+{% block title %}{{ 'Editar usuario' if ed else 'Nuevo usuario' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ self.title() }}</h1>{% if ed %}<p class="mono">{{ usuario.username }}</p>{% endif %}</div>
+  <div class="page-actions"><a href="{{ url_for('usuarios.lista') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a></div></div>
+<div class="card" style="max-width:860px">
+  <form method="post" class="card-body">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      {{ campo('nombre', 'Nombre', v('nombre'), req=True, attrs='maxlength="80" autofocus') }}
+      {{ campo('apellido', 'Apellido', v('apellido'), req=True, attrs='maxlength="80"') }}
+      {{ campo('username', 'Usuario', v('username'), req=True, hint='3 a 40 caracteres: letras, números, punto o guion', attrs='maxlength="40" autocomplete="off" pattern="[A-Za-z0-9._\\-]{3,40}"') }}
+      {{ campo('email', 'Email', v('email'), tipo='email', req=True, attrs='maxlength="120"') }}
+      <div class="field col-6"><label class="req" for="rol_id">Rol</label><select id="rol_id" name="rol_id" required>
+        {% set rol_actual = (form.get('rol_id') or (usuario.rol_id if ed else ''))|string %}
+        {% for r in roles %}<option value="{{ r.id }}" {{ 'selected' if rol_actual == r.id|string }}>{{ r.nombre }} — {{ r.descripcion }}</option>{% endfor %}</select></div>
+      <div class="field col-6"><label for="empleado_id">Empleado vinculado</label><select id="empleado_id" name="empleado_id"><option value="">Ninguno</option>
+        {% set emp_actual = (form.get('empleado_id') or (usuario.empleado_id if ed and usuario.empleado_id else ''))|string %}
+        {% for e in empleados %}<option value="{{ e.id }}" {{ 'selected' if emp_actual == e.id|string }}>{{ e.nombre_completo }} · {{ e.puesto }}</option>{% endfor %}</select>
+        <span class="hint">Solo se listan empleados activos sin usuario.</span></div>
+      {% if not ed %}
+      <div class="field col-6"><label class="req" for="password">Contraseña inicial</label><input type="password" id="password" name="password" required minlength="8" autocomplete="new-password"><span class="hint">El usuario deberá cambiarla en su primer ingreso.</span></div>
+      <div class="field col-6"><label class="req" for="password2">Repetir contraseña</label><input type="password" id="password2" name="password2" required minlength="8" autocomplete="new-password"></div>
+      {% endif %}
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">{{ icon('check','sm') }} Guardar</button></div>
+  </form>
+</div>
+{% endblock %}

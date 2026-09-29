@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, stock_badge, activo, confirmar_post %}
+{% block title %}{{ producto.nombre }}{% endblock %}
+{% set gestiona = current_user.tiene_permiso('productos.gestionar') %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ producto.nombre }}</h1><p>{{ producto.categoria.nombre }}{% if producto.marca %} · {{ producto.marca.nombre }}{% endif %} · {{ activo(producto.activo) }} {{ stock_badge(producto) }}</p></div>
+  <div class="page-actions">
+    <a href="{{ url_for('productos.lista') }}" class="btn btn-ghost" data-action="back">{{ icon('arrow-left','sm') }} Volver</a>
+    {% if current_user.tiene_permiso('stock.ajustar') %}<a href="{{ url_for('stock.movimiento', producto_id=producto.id) }}" class="btn">{{ icon('boxes','sm') }} Mover stock</a>{% endif %}
+    {% if gestiona %}
+      {{ confirmar_post(url_for('productos.estado', producto_id=producto.id), 'Desactivar' if producto.activo else 'Activar', 'btn btn-outline-danger' if producto.activo else 'btn', '¿Desactivar este producto? Dejará de aparecer en el punto de venta.' if producto.activo else '¿Activar este producto?', 'power') }}
+      <a href="{{ url_for('productos.editar', producto_id=producto.id) }}" class="btn btn-primary">{{ icon('pencil','sm') }} Editar</a>
+    {% endif %}
+  </div>
+</div>
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-body">
+      <div class="flex gap-2" style="align-items:flex-start;flex-wrap:wrap">
+        {% if producto.imagen %}<img src="{{ url_for('static', filename='uploads/productos/' ~ producto.imagen) }}" alt="" style="width:160px;height:160px;object-fit:cover;border-radius:12px;border:1px solid var(--border)">{% endif %}
+        <dl class="dl grow">
+          <dt>Código de barras</dt><dd class="mono">{{ producto.codigo_barras or '—' }}</dd>
+          <dt>Unidad</dt><dd>{{ producto.unidad.nombre }}</dd>
+          <dt>Precio de venta</dt><dd style="font-size:1.2rem">{{ producto.precio_venta|moneda }}</dd>
+          {% if gestiona %}
+          <dt>Precio de compra</dt><dd>{{ producto.precio_compra|moneda }}</dd>
+          <dt>Margen</dt><dd>{{ producto.margen_pct|pct if producto.margen_pct is not none else '—' }}</dd>
+          {% endif %}
+          <dt>Stock actual</dt><dd>{{ producto.stock_actual|cantidad }} {{ producto.unidad.abreviatura }}</dd>
+          <dt>Stock mínimo</dt><dd>{{ producto.stock_minimo|cantidad }}</dd>
+          <dt>Descripción</dt><dd style="white-space:pre-line;font-weight:400">{{ producto.descripcion or '—' }}</dd>
+          <dt>Actualizado</dt><dd>{{ producto.actualizado_en|fecha }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  {% if movimientos %}
+  <div class="card">
+    <div class="card-head"><h2>Últimos movimientos</h2><a class="btn btn-sm" href="{{ url_for('stock.index', producto=producto.codigo_barras or producto.nombre) }}">Ver todos</a></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Stock</th></tr></thead>
+      <tbody>{% for m in movimientos %}
+        <tr><td class="small nowrap">{{ m.fecha|fecha }}</td><td><span class="badge">{{ m.tipo|capitalize }}</span></td>
+        <td class="num {{ 'text-success' if m.cantidad > 0 else 'text-danger' }}">{{ '+' if m.cantidad > 0 }}{{ m.cantidad|cantidad }}</td><td class="num">{{ m.stock_nuevo|cantidad }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

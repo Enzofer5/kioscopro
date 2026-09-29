@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Cerrar caja #{{ caja.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Cierre de caja #{{ caja.id }}</h1><p>Contá el efectivo y declaralo. La diferencia queda registrada.</p></div>
+  <div class="page-actions"><a href="{{ url_for('caja.index') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a></div>
+</div>
+<div class="grid grid-2">
+  <div class="card"><div class="card-head"><h2>Resumen del turno</h2></div><div class="card-body">
+    <dl class="dl mb-2"><dt>Apertura</dt><dd>{{ caja.fecha_apertura|fecha }} · {{ caja.usuario_apertura.nombre_completo }}</dd></dl>
+    {% include "caja/_resumen.html" %}
+  </div></div>
+  <div class="card" style="align-self:start">
+    <div class="card-head"><h2>Dinero declarado</h2></div>
+    <form method="post" class="card-body" data-confirm="¿Cerrar la caja? Después no se podrán registrar más movimientos en ella." id="form-cierre" data-esperado="{{ resumen.esperado }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field mb-2"><label class="req" for="monto_declarado">Efectivo contado</label>
+        <div class="input-group"><span>$</span><input id="monto_declarado" name="monto_declarado" inputmode="decimal" required autofocus style="font-size:1.3rem;font-weight:700"></div></div>
+      <ul class="list-plain mb-2">
+        <li><span>Dinero esperado</span><b class="num">{{ resumen.esperado|moneda }}</b></li>
+        <li><span>Diferencia</span><b class="num" id="diferencia">—</b></li>
+      </ul>
+      <div class="field mb-2"><label for="observaciones">Observaciones</label><input id="observaciones" name="observaciones" maxlength="255" placeholder="Ej.: faltante por error de vuelto"></div>
+      <button type="submit" class="btn btn-accent btn-lg btn-block">{{ icon('lock','sm') }} Cerrar caja</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/caja.js') }}"></script>{% endblock %}

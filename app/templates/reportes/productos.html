@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, thumb %}
+{% block title %}Reporte de productos{% endblock %}
+{% macro ranking(titulo, filas, criterio) %}
+<div class="card">
+  <div class="card-head"><h2>{{ titulo }}</h2></div>
+  {% if filas %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>#</th><th>Producto</th><th class="num">Unidades</th><th class="num">Facturación</th><th class="num hide-sm">Ganancia</th></tr></thead>
+    <tbody>{% for f in filas %}
+      <tr><td class="muted">{{ loop.index }}</td><td><a href="{{ url_for('productos.detalle', producto_id=f.producto.id) }}">{{ f.producto.nombre }}</a></td>
+      <td class="num {{ 'fw' if criterio == 'cantidad' }}">{% if criterio == 'cantidad' %}<b>{{ f.cantidad|cantidad }}</b>{% else %}{{ f.cantidad|cantidad }}{% endif %}</td>
+      <td class="num">{% if criterio == 'facturacion' %}<b>{{ f.facturacion|moneda }}</b>{% else %}{{ f.facturacion|moneda }}{% endif %}</td>
+      <td class="num hide-sm">{{ f.ganancia|moneda }}</td></tr>
+    {% endfor %}</tbody>
+  </table></div>
+  {% else %}<div class="empty"><p class="mb-0 small">Sin ventas en el período.</p></div>{% endif %}
+</div>
+{% endmacro %}
+{% block content %}
+{% include "reportes/_filtros.html" %}
+<div class="card mb-2">
+  <div class="card-head"><h2>Top 10 por unidades vendidas</h2></div>
+  <div class="card-body"><div class="chart-box"><canvas data-chart="top" aria-label="Productos más vendidos"></canvas></div></div>
+</div>
+<div class="grid grid-2 mb-2">
+  {{ ranking('Más vendidos', mas_vendidos, 'cantidad') }}
+  {{ ranking('Mayor facturación', mayor_facturacion, 'facturacion') }}
+</div>
+<div class="grid grid-3">
+  {{ ranking('Menos vendidos (activos)', menos_vendidos, 'cantidad') }}
+  <div class="card">
+    <div class="card-head"><h2>Bajo stock</h2><a class="btn btn-sm" href="{{ url_for('stock.alertas', tipo='bajo') }}">Ver</a></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Mín.</th></tr></thead>
+      <tbody>{% for x in bajo_stock %}<tr><td>{{ x.nombre }}</td><td class="num text-warning"><b>{{ x.stock_actual|cantidad }}</b></td><td class="num">{{ x.stock_minimo|cantidad }}</td></tr>
+      {% else %}<tr><td colspan="3" class="center muted">Nada por reponer.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Agotados</h2><a class="btn btn-sm" href="{{ url_for('stock.alertas', tipo='agotados') }}">Ver</a></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>Producto</th><th class="num">Mín.</th></tr></thead>
+      <tbody>{% for x in agotados %}<tr><td>{{ x.nombre }}</td><td class="num">{{ x.stock_minimo|cantidad }}</td></tr>
+      {% else %}<tr><td colspan="2" class="center muted">Sin productos agotados.</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+</div>
+<script type="application/json" id="datos-graficos">{{ {'top': grafico}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script><script src="{{ url_for('static', filename='js/charts.js') }}"></script>{% endblock %}

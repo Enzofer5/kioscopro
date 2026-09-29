@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio, stock_badge, thumb, activo %}
+{% block title %}Productos{% endblock %}
+{% set gestiona = current_user.tiene_permiso('productos.gestionar') %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Productos</h1><p>Buscá o filtrá para ver productos.</p></div>
+  {% if gestiona %}
+  <div class="page-actions">
+    <a href="{{ url_for('productos.catalogo', tipo='categorias') }}" class="btn">{{ icon('tag','sm') }} Categorías y marcas</a>
+    <a href="{{ url_for('productos.nuevo') }}" class="btn btn-primary">{{ icon('plus','sm') }} Nuevo producto</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card mb-2">
+  <form method="get" class="card-body filters" data-clean>
+    <div class="field"><label for="codigo">Código de barras</label><input type="search" id="codigo" name="codigo" value="{{ request.args.get('codigo','') }}" inputmode="numeric" placeholder="Escaneá o escribí"></div>
+    <div class="field"><label for="nombre">Nombre</label><input type="search" id="nombre" name="nombre" value="{{ request.args.get('nombre','') }}" placeholder="Ej: coca 500"></div>
+    <div class="field"><label for="marca_id">Marca</label>
+      <select id="marca_id" name="marca_id"><option value="">Todas</option>
+      {% for m in marcas %}<option value="{{ m.id }}" {{ 'selected' if request.args.get('marca_id') == m.id|string }}>{{ m.nombre }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="categoria_id">Categoría</label>
+      <select id="categoria_id" name="categoria_id"><option value="">Todas</option>
+      {% for c in categorias %}<option value="{{ c.id }}" {{ 'selected' if request.args.get('categoria_id') == c.id|string }}>{{ c.nombre }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="stock">Stock</label>
+      <select id="stock" name="stock"><option value="">Todos</option>
+        <option value="bajo" {{ 'selected' if request.args.get('stock') == 'bajo' }}>Bajo stock</option>
+        <option value="sin" {{ 'selected' if request.args.get('stock') == 'sin' }}>Sin stock</option></select></div>
+    <div class="field"><label for="estado">Estado</label>
+      <select id="estado" name="estado"><option value="">Todos</option>
+        <option value="activos" {{ 'selected' if request.args.get('estado') == 'activos' }}>Activos</option>
+        <option value="inactivos" {{ 'selected' if request.args.get('estado') == 'inactivos' }}>Inactivos</option></select></div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">{{ icon('search','sm') }} Buscar</button>
+      <a href="{{ url_for('productos.lista') }}" class="btn btn-ghost">Limpiar</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+{% if not buscado %}
+  {% call vacio("Usá los filtros para buscar productos", "La lista no se carga completa para que la pantalla sea rápida.", "package") %}
+    <div class="chips" style="justify-content:center">
+      <a class="chip" href="{{ url_for('productos.lista', estado='activos') }}">Todos los activos</a>
+      <a class="chip" href="{{ url_for('productos.lista', stock='bajo') }}">Bajo stock</a>
+      <a class="chip" href="{{ url_for('productos.lista', stock='sin') }}">Sin stock</a>
+      <a class="chip" href="{{ url_for('productos.lista', estado='inactivos') }}">Inactivos</a>
+    </div>
+  {% endcall %}
+{% elif not paginacion.items %}
+  {% call vacio("No hay productos con esos filtros", "", "package-x") %}
+    {% if gestiona %}<a href="{{ url_for('productos.nuevo') }}" class="btn btn-primary btn-sm">{{ icon('plus','sm') }} Crear producto</a>{% endif %}
+  {% endcall %}
+{% else %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Producto</th><th class="hide-sm">Categoría</th>{% if gestiona %}<th class="num hide-sm">Costo</th>{% endif %}<th class="num">Precio</th><th class="num">Stock</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+      {% for p in paginacion.items %}
+        <tr class="{{ 'row-muted' if not p.activo }}">
+          <td><div class="prod-cell">{{ thumb(p) }}<div><b><a href="{{ url_for('productos.detalle', producto_id=p.id) }}">{{ p.nombre }}</a></b><span class="mono">{{ p.codigo_barras or 'Sin código' }}{% if p.marca %} · {{ p.marca.nombre }}{% endif %}</span></div></div></td>
+          <td class="hide-sm">{{ p.categoria.nombre }}</td>
+          {% if gestiona %}<td class="num hide-sm muted">{{ p.precio_compra|moneda }}</td>{% endif %}
+          <td class="num"><b>{{ p.precio_venta|moneda }}</b></td>
+          <td class="num">{{ p.stock_actual|cantidad }} {{ p.unidad.abreviatura }}<div>{{ stock_badge(p) }}</div></td>
+          <td>{{ activo(p.activo) }}</td>
+          <td class="actions">
+            <a class="btn btn-sm btn-icon" href="{{ url_for('productos.detalle', producto_id=p.id) }}" title="Ver" aria-label="Ver">{{ icon('eye','sm') }}</a>
+            {% if gestiona %}<a class="btn btn-sm btn-icon" href="{{ url_for('productos.editar', producto_id=p.id) }}" title="Editar" aria-label="Editar">{{ icon('pencil','sm') }}</a>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ paginar(paginacion) }}
+{% endif %}
+</div>
+{% endblock %}

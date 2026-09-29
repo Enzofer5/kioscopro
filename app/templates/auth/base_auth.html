@@ -1,0 +1,45 @@
+{% from "partials/macros.html" import icon %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" content="#10201b">
+  <title>{% block title %}Ingresar{% endblock %} · {{ negocio.nombre }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+<div class="auth-page">
+  <section class="auth-side">
+    <div class="brand" style="padding:0">
+      <div class="brand-mark">K</div>
+      <div><div class="brand-name">KioscoPro</div><div class="brand-sub">{{ negocio.nombre }}</div></div>
+    </div>
+    <div>
+      <h2>Todo el mostrador, en una sola pantalla.</h2>
+      <ul>
+        <li>{{ icon('scan-barcode') }} Ventas rápidas con lector de código de barras</li>
+        <li>{{ icon('boxes') }} Stock al día con alertas de reposición</li>
+        <li>{{ icon('wallet') }} Caja con arqueo y cierre diario</li>
+        <li>{{ icon('chart-column') }} Reportes de ventas y ganancias</li>
+      </ul>
+    </div>
+    <p class="small mb-0" style="color:#6f8479">© {{ ahora().year }} {{ negocio.nombre }}</p>
+  </section>
+  <main class="auth-main">
+    <div class="auth-card">
+      <div class="brand auth-brand-m"><div class="brand-mark">K</div><div><div class="brand-name">KioscoPro</div><div class="muted xsmall">{{ negocio.nombre }}</div></div></div>
+      {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% if mensajes %}<div class="flashes">
+        {% for cat, msg in mensajes %}<div class="alert alert-{{ cat if cat in ('success','danger','warning','info') else 'info' }}" role="alert"><span>{{ msg }}</span></div>{% endfor %}
+      </div>{% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

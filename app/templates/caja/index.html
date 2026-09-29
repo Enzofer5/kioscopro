@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Caja #{{ caja.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Caja #{{ caja.id }} <span class="badge badge-success">Abierta</span></h1>
+    <p>Abrió {{ caja.usuario_apertura.nombre_completo }} el {{ caja.fecha_apertura|fecha }}</p></div>
+  <div class="page-actions">
+    <button type="button" class="btn" data-action="open-modal" data-target="modal-mov">{{ icon('arrow-right-left','sm') }} Ingreso / egreso</button>
+    <a href="{{ url_for('caja.cerrar') }}" class="btn btn-accent">{{ icon('lock','sm') }} Cerrar caja</a>
+  </div>
+</div>
+<div class="grid grid-4 kpis mb-2">
+  <div class="card kpi"><div class="kpi-label"><span class="kpi-icon">{{ icon('banknote','sm') }}</span>Efectivo esperado</div><div class="kpi-value">{{ resumen.esperado|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label"><span class="kpi-icon blue">{{ icon('receipt','sm') }}</span>Total vendido</div><div class="kpi-value">{{ resumen.ventas_total|moneda }}</div><div class="kpi-sub">{{ resumen.cantidad_ventas }} ventas</div></div>
+  <div class="card kpi"><div class="kpi-label"><span class="kpi-icon amber">{{ icon('credit-card','sm') }}</span>Tarjetas</div><div class="kpi-value">{{ resumen.ventas_tarjeta|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label"><span class="kpi-icon blue">{{ icon('smartphone','sm') }}</span>Transf. + Mercado Pago</div><div class="kpi-value">{{ (resumen.ventas_transferencia + resumen.ventas_mercadopago)|moneda }}</div></div>
+</div>
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-head"><h2>Movimientos</h2><span class="muted small">{{ movimientos|length }} registro(s)</span></div>
+    {% if movimientos %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th class="hide-sm">Medio</th><th class="hide-sm">Usuario</th><th class="num">Monto</th></tr></thead>
+      <tbody>{% for m in movimientos %}
+        <tr>
+          <td class="nowrap">{{ m.fecha.strftime('%H:%M') }}</td>
+          <td><span class="badge {{ 'badge-success' if m.es_entrada else 'badge-danger' }}">{{ m.tipo|capitalize }}</span></td>
+          <td>{% if m.venta_id and current_user.tiene_permiso('ventas.historial') %}<a href="{{ url_for('ventas.detalle', venta_id=m.venta_id) }}">{{ m.concepto }}</a>{% else %}{{ m.concepto }}{% endif %}</td>
+          <td class="hide-sm">{{ m.metodo.nombre }}</td>
+          <td class="hide-sm small">{{ m.usuario.nombre }}</td>
+          <td class="num {{ 'text-success' if m.es_entrada else 'text-danger' }}"><b>{{ '+' if m.es_entrada else '−' }} {{ m.monto|moneda }}</b></td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="empty"><p class="mb-0">Todavía no hay movimientos en esta caja.</p></div>{% endif %}
+  </div>
+  <div class="card" style="align-self:start"><div class="card-head"><h2>Arqueo en vivo</h2></div><div class="card-body">{% include "caja/_resumen.html" %}</div></div>
+</div>
+
+<dialog class="modal" id="modal-mov">
+  <form method="post" action="{{ url_for('caja.movimiento') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="modal-head"><h2>Movimiento de caja</h2><button type="button" class="btn btn-ghost btn-icon" data-action="close-modal" aria-label="Cerrar">{{ icon('x') }}</button></div>
+    <div class="modal-body">
+      <div class="field mb-2"><label class="req">Tipo</label>
+        <div class="chips">{% for k, t in tipos.items() %}<label class="check"><input type="radio" name="tipo" value="{{ k }}" {{ 'checked' if loop.first }}> {{ t }}</label>{% endfor %}</div>
+        <span class="hint">Para gastos del negocio (luz, alquiler…) usá el módulo Gastos: impactan en los reportes de ganancia.</span></div>
+      <div class="field mb-2"><label class="req" for="concepto">Concepto</label><input id="concepto" name="concepto" required maxlength="150" placeholder="Ej.: cambio del banco, retiro del dueño"></div>
+      <div class="field"><label class="req" for="monto">Monto en efectivo</label><div class="input-group"><span>$</span><input id="monto" name="monto" inputmode="decimal" required></div></div>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn" data-action="close-modal">Cancelar</button><button type="submit" class="btn btn-primary">Registrar</button></div>
+  </form>
+</dialog>
+{% endblock %}

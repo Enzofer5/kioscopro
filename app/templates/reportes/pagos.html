@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Reporte por método de pago{% endblock %}
+{% block content %}
+{% include "reportes/_filtros.html" %}
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-head"><h2>Dinero ingresado por método de pago</h2></div>
+    <div class="card-body"><div class="chart-box"><canvas data-chart="pagos" aria-label="Ingresos por método de pago"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Método</th><th class="num">Operaciones</th><th class="num">Total</th><th class="num">%</th></tr></thead>
+      <tbody>{% for m in metodos %}
+        <tr><td>{{ m.nombre }}</td><td class="num">{{ m.cantidad }}</td><td class="num"><b>{{ m.total|moneda }}</b></td><td class="num muted">{{ ((m.total / total * 100) if total else 0)|pct }}</td></tr>
+      {% endfor %}</tbody>
+      <tfoot><tr><td>Total</td><td class="num">{{ metodos|sum(attribute='cantidad') }}</td><td class="num">{{ total|moneda }}</td><td class="num">100%</td></tr></tfoot>
+    </table></div>
+  </div>
+</div>
+<script type="application/json" id="datos-graficos">{{ {'pagos': grafico}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script><script src="{{ url_for('static', filename='js/charts.js') }}"></script>{% endblock %}

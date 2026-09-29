@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Caja #{{ caja.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Caja #{{ caja.id }} {% if caja.abierta %}<span class="badge badge-success">Abierta</span>{% else %}<span class="badge">Cerrada</span>{% endif %}</h1>
+    <p>{{ caja.fecha_apertura|fecha }} → {{ caja.fecha_cierre|fecha if caja.fecha_cierre else 'en curso' }}</p></div>
+  <div class="page-actions">
+    <a href="{{ url_for('caja.historial') if current_user.tiene_permiso('caja.historial') else url_for('caja.index') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a>
+    <button type="button" class="btn" data-action="print">{{ icon('printer','sm') }} Imprimir</button>
+  </div>
+</div>
+{% if not caja.abierta %}
+<div class="grid grid-4 kpis mb-2">
+  <div class="card kpi"><div class="kpi-label">Monto inicial</div><div class="kpi-value">{{ caja.monto_inicial|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label">Dinero esperado</div><div class="kpi-value">{{ caja.monto_esperado|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label">Dinero declarado</div><div class="kpi-value">{{ caja.monto_declarado|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label">Diferencia</div><div class="kpi-value {{ 'text-danger' if caja.diferencia < 0 else 'text-warning' if caja.diferencia > 0 else 'text-success' }}">{{ caja.diferencia|moneda }}</div><div class="kpi-sub">{{ 'Faltante' if caja.diferencia < 0 else 'Sobrante' if caja.diferencia > 0 else 'Sin diferencias' }}</div></div>
+</div>
+{% endif %}
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-head"><h2>Movimientos</h2></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Hora</th><th>Tipo</th><th>Concepto</th><th>Medio</th><th class="hide-sm">Usuario</th><th class="num">Monto</th></tr></thead>
+      <tbody>{% for m in movimientos %}
+        <tr><td class="nowrap small">{{ m.fecha|fecha }}</td>
+          <td><span class="badge {{ 'badge-success' if m.es_entrada else 'badge-danger' }}">{{ m.tipo|capitalize }}</span></td>
+          <td>{{ m.concepto }}</td><td>{{ m.metodo.nombre }}</td><td class="hide-sm small">{{ m.usuario.nombre }}</td>
+          <td class="num {{ 'text-success' if m.es_entrada else 'text-danger' }}">{{ '+' if m.es_entrada else '−' }} {{ m.monto|moneda }}</td></tr>
+      {% else %}<tr><td colspan="6" class="center muted">Sin movimientos.</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+  <div class="card" style="align-self:start"><div class="card-head"><h2>Arqueo</h2></div><div class="card-body">
+    <dl class="dl mb-2 small">
+      <dt>Abrió</dt><dd>{{ caja.usuario_apertura.nombre_completo }}</dd>
+      {% if caja.usuario_cierre %}<dt>Cerró</dt><dd>{{ caja.usuario_cierre.nombre_completo }}</dd>{% endif %}
+      {% if caja.observaciones %}<dt>Observaciones</dt><dd>{{ caja.observaciones }}</dd>{% endif %}
+    </dl>
+    {% include "caja/_resumen.html" %}
+  </div></div>
+</div>
+{% endblock %}

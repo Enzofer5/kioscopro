@@ -1,0 +1,12 @@
+{% extends "auth/base_auth.html" %}
+{% block title %}Nueva contraseña{% endblock %}
+{% block content %}
+<h1>Nueva contraseña</h1>
+<p class="sub">Elegí una contraseña de al menos 8 caracteres con letras y números.</p>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field"><label for="password">Nueva contraseña</label><input type="password" id="password" name="password" required minlength="8" autocomplete="new-password" autofocus></div>
+  <div class="field"><label for="password2">Repetir contraseña</label><input type="password" id="password2" name="password2" required minlength="8" autocomplete="new-password"></div>
+  <button type="submit" class="btn btn-primary btn-lg btn-block">Guardar contraseña</button>
+</form>
+{% endblock %}

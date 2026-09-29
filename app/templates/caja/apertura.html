@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Caja{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Caja</h1><p>No hay ninguna caja abierta.</p></div>
+  {% if current_user.tiene_permiso('caja.historial') %}<div class="page-actions"><a href="{{ url_for('caja.historial') }}" class="btn">{{ icon('clipboard-list','sm') }} Cierres anteriores</a></div>{% endif %}
+</div>
+<div class="grid grid-2">
+  <div class="card">
+    <div class="card-head"><h2>{{ icon('wallet','sm') }} Abrir caja</h2></div>
+    <form method="post" action="{{ url_for('caja.abrir') }}" class="card-body">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field mb-2"><label class="req" for="monto_inicial">Monto inicial en efectivo</label>
+        <div class="input-group"><span>$</span><input id="monto_inicial" name="monto_inicial" inputmode="decimal" required autofocus placeholder="0,00" value="{{ ultima.monto_declarado if ultima else '' }}"></div>
+        <span class="hint">Contá el cambio con el que arrancás el turno.</span></div>
+      <div class="field mb-2"><label for="observaciones">Observaciones</label><input id="observaciones" name="observaciones" maxlength="255" placeholder="Opcional"></div>
+      <dl class="dl small mb-2"><dt>Usuario</dt><dd>{{ current_user.nombre_completo }}</dd><dt>Fecha y hora</dt><dd>{{ ahora()|fecha }}</dd></dl>
+      <button type="submit" class="btn btn-primary btn-lg btn-block">{{ icon('check','sm') }} Abrir caja</button>
+    </form>
+  </div>
+  {% if ultima %}
+  <div class="card">
+    <div class="card-head"><h2>Último cierre</h2>{% if current_user.tiene_permiso('caja.historial') or current_user.id in (ultima.usuario_apertura_id, ultima.usuario_cierre_id) %}<a class="btn btn-sm" href="{{ url_for('caja.detalle', caja_id=ultima.id) }}">Ver detalle</a>{% endif %}</div>
+    <div class="card-body">
+      <dl class="dl">
+        <dt>Caja</dt><dd>#{{ ultima.id }}</dd>
+        <dt>Cerró</dt><dd>{{ ultima.usuario_cierre.nombre_completo }} · {{ ultima.fecha_cierre|fecha }}</dd>
+        <dt>Esperado</dt><dd>{{ ultima.monto_esperado|moneda }}</dd>
+        <dt>Declarado</dt><dd>{{ ultima.monto_declarado|moneda }}</dd>
+        <dt>Diferencia</dt><dd class="{{ 'text-danger' if ultima.diferencia < 0 else 'text-success' if ultima.diferencia > 0 }}">{{ ultima.diferencia|moneda }}</dd>
+      </dl>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

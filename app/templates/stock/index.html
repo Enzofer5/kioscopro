@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio %}
+{% block title %}Stock{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Control de stock</h1><p>Historial de movimientos de inventario y alertas.</p></div>
+  {% if current_user.tiene_permiso('stock.ajustar') %}
+  <div class="page-actions"><a href="{{ url_for('stock.movimiento') }}" class="btn btn-primary">{{ icon('arrow-right-left','sm') }} Registrar movimiento</a></div>
+  {% endif %}
+</div>
+<div class="grid grid-2 mb-2">
+  <a class="card kpi" href="{{ url_for('stock.alertas', tipo='bajo') }}">
+    <div class="kpi-label"><span class="kpi-icon amber">{{ icon('triangle-alert','sm') }}</span>Productos con bajo stock</div>
+    <div class="kpi-value">{{ bajo }}</div><div class="kpi-sub">Ver listado para reponer →</div>
+  </a>
+  <a class="card kpi" href="{{ url_for('stock.alertas', tipo='agotados') }}">
+    <div class="kpi-label"><span class="kpi-icon red">{{ icon('package-x','sm') }}</span>Productos agotados</div>
+    <div class="kpi-value {{ 'text-danger' if agotados }}">{{ agotados }}</div><div class="kpi-sub">Ver listado →</div>
+  </a>
+</div>
+<div class="card mb-2">
+  <div class="card-head"><h2>Historial de movimientos</h2></div>
+  <form method="get" class="card-body filters" data-clean>
+    <div class="field"><label for="producto">Producto</label><input type="search" id="producto" name="producto" value="{{ request.args.get('producto','') }}" placeholder="Nombre o código"></div>
+    <div class="field"><label for="tipo">Tipo</label><select id="tipo" name="tipo"><option value="">Todos</option>
+      {% for t in tipos %}<option value="{{ t }}" {{ 'selected' if request.args.get('tipo') == t }}>{{ t|capitalize }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ request.args.get('desde','') }}"></div>
+    <div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ request.args.get('hasta','') }}"></div>
+    <div class="field"><label for="usuario_id">Usuario</label><select id="usuario_id" name="usuario_id"><option value="">Todos</option>
+      {% for u in usuarios %}<option value="{{ u.id }}" {{ 'selected' if request.args.get('usuario_id') == u.id|string }}>{{ u.nombre_completo }}</option>{% endfor %}</select></div>
+    <div class="actions"><button type="submit" class="btn btn-primary">{{ icon('search','sm') }} Buscar</button><a href="{{ url_for('stock.index') }}" class="btn btn-ghost">Limpiar</a></div>
+  </form>
+{% if not buscado %}
+  {% call vacio("Filtrá para ver movimientos", "Entradas, salidas, ajustes, ventas, compras y anulaciones quedan registradas con usuario, fecha y motivo.", "history") %}
+    <div class="chips" style="justify-content:center">
+      <a class="chip" href="{{ url_for('stock.index', desde=ahora().strftime('%Y-%m-%d')) }}">Movimientos de hoy</a>
+      <a class="chip" href="{{ url_for('stock.index', tipo='ajuste') }}">Ajustes</a>
+      <a class="chip" href="{{ url_for('stock.index', tipo='salida') }}">Salidas</a>
+    </div>
+  {% endcall %}
+{% elif not paginacion.items %}
+  {{ vacio("Sin movimientos", "No hay movimientos con esos filtros.") }}
+{% else %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="num">Cantidad</th><th class="num hide-sm">Anterior</th><th class="num">Nuevo</th><th>Motivo</th><th class="hide-sm">Usuario</th></tr></thead>
+    <tbody>
+    {% for m in paginacion.items %}
+      <tr>
+        <td class="nowrap small">{{ m.fecha|fecha }}</td>
+        <td><a href="{{ url_for('productos.detalle', producto_id=m.producto_id) }}">{{ m.producto.nombre }}</a></td>
+        <td><span class="badge {{ {'venta':'badge-info','compra':'badge-success','entrada':'badge-success','salida':'badge-danger','ajuste':'badge-warning','anulacion':'badge-brand'}.get(m.tipo,'') }}">{{ m.tipo|capitalize }}</span></td>
+        <td class="num {{ 'text-success' if m.cantidad > 0 else 'text-danger' }}"><b>{{ '+' if m.cantidad > 0 }}{{ m.cantidad|cantidad }}</b></td>
+        <td class="num hide-sm muted">{{ m.stock_anterior|cantidad }}</td>
+        <td class="num">{{ m.stock_nuevo|cantidad }}</td>
+        <td class="small">{% if m.venta_id and current_user.tiene_permiso('ventas.historial') %}<a href="{{ url_for('ventas.detalle', venta_id=m.venta_id) }}">{{ m.motivo }}</a>{% elif m.compra_id and current_user.tiene_permiso('compras.gestionar') %}<a href="{{ url_for('compras.detalle', compra_id=m.compra_id) }}">{{ m.motivo }}</a>{% else %}{{ m.motivo }}{% endif %}</td>
+        <td class="hide-sm small">{{ m.usuario.nombre_completo }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {{ paginar(paginacion) }}
+{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "auth/base_auth.html" %}
+{% block title %}Configuración inicial{% endblock %}
+{% block content %}
+<span class="badge badge-brand mb-1">Primer uso</span>
+<h1>Creá la cuenta del dueño</h1>
+<p class="sub">Esta cuenta tiene acceso total. Después vas a poder crear los usuarios del resto del equipo.</p>
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="form-grid">
+    <div class="field col-6"><label class="req" for="nombre">Nombre</label><input id="nombre" name="nombre" value="{{ form.get('nombre','') }}" required maxlength="80"></div>
+    <div class="field col-6"><label class="req" for="apellido">Apellido</label><input id="apellido" name="apellido" value="{{ form.get('apellido','') }}" required maxlength="80"></div>
+    <div class="field col-12"><label class="req" for="username">Usuario</label><input id="username" name="username" value="{{ form.get('username','') }}" required maxlength="40" autocomplete="username" pattern="[A-Za-z0-9._\-]{3,40}"></div>
+    <div class="field col-12"><label class="req" for="email">Email</label><input type="email" id="email" name="email" value="{{ form.get('email','') }}" required maxlength="120"></div>
+    <div class="field col-6"><label class="req" for="password">Contraseña</label><input type="password" id="password" name="password" required minlength="8" autocomplete="new-password"></div>
+    <div class="field col-6"><label class="req" for="password2">Repetir</label><input type="password" id="password2" name="password2" required minlength="8" autocomplete="new-password"></div>
+    <p class="col-12 hint small muted mb-0">Mínimo 8 caracteres, combinando letras y números.</p>
+  </div>
+  <button type="submit" class="btn btn-primary btn-lg btn-block mt-2">Crear cuenta y empezar</button>
+</form>
+{% endblock %}

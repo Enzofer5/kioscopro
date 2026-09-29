@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Nueva venta{% endblock %}
+{% block page_title %}Punto de venta{% endblock %}
+{% block topbar_extra %}
+<span class="muted small hide-sm"><kbd style="border-color:var(--border-strong)">F2</kbd> buscar · <kbd style="border-color:var(--border-strong)">F4</kbd> cobrar · <kbd style="border-color:var(--border-strong)">Esc</kbd> limpiar</span>
+{% endblock %}
+{% block content %}
+{% if requiere_caja and not caja %}
+<div class="alert alert-warning mb-2">{{ icon('triangle-alert') }}
+  <span>No hay una caja abierta: no se pueden registrar ventas.
+  {% if current_user.tiene_permiso('caja.operar') %}<a href="{{ url_for('caja.index') }}"><b>Abrir caja ahora</b></a>{% else %}Pedile a un cajero o encargado que abra la caja.{% endif %}</span>
+</div>
+{% endif %}
+
+<div class="pos" id="pos"
+     data-api-productos="{{ url_for('ventas.api_productos') }}"
+     data-api-clientes="{{ url_for('ventas.api_clientes') }}"
+     data-api-confirmar="{{ url_for('ventas.api_confirmar') }}"
+     data-puede-crear-cliente="{{ '1' if current_user.tiene_permiso('clientes.gestionar') else '0' }}"
+     data-bloqueado="{{ '1' if requiere_caja and not caja else '0' }}">
+
+  <section class="grow" style="display:flex;flex-direction:column;gap:1rem">
+    <div class="card pos-search">
+      <div class="ac" style="position:relative">
+        <span class="search-icon">{{ icon('scan-barcode') }}</span>
+        <input type="search" id="buscar" class="big" placeholder="Escaneá el código de barras o escribí el nombre del producto…" autocomplete="off" autofocus aria-label="Buscar producto">
+      </div>
+      <p class="xsmall muted mt-1 mb-0">Enter agrega el producto resaltado. Para sumar varias unidades escribí <b>3*</b> antes del código (ej.: <span class="mono">3*7790895000997</span>).</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Carrito <span class="badge" id="cant-items">0</span></h2>
+        <button type="button" class="btn btn-ghost btn-sm" id="vaciar">{{ icon('trash-2','sm') }} Vaciar</button>
+      </div>
+      <div class="table-wrap">
+        <table class="table cart-table">
+          <thead><tr><th>Producto</th><th class="num">Precio</th><th class="center">Cantidad</th><th class="num hide-sm">Desc. %</th><th class="num">Subtotal</th><th></th></tr></thead>
+          <tbody id="carrito"></tbody>
+        </table>
+        <div class="cart-empty" id="carrito-vacio">{{ icon('shopping-cart') }}<p class="mt-1 mb-0">El carrito está vacío.<br><span class="small">Escaneá o buscá un producto para empezar.</span></p></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="pos-side" id="panel-cobro">
+    <div class="card">
+      <div class="card-body">
+        <label>Cliente <span class="muted xsmall">(opcional)</span></label>
+        <div id="cliente-elegido" class="cliente-sel mt-1 hidden">
+          {{ icon('user','sm') }}<span class="grow" id="cliente-nombre"></span>
+          <button type="button" class="btn btn-ghost btn-icon btn-sm" id="quitar-cliente" aria-label="Quitar cliente">{{ icon('x','sm') }}</button>
+        </div>
+        <div id="cliente-buscar" class="mt-1">
+          <div class="flex gap-1">
+            <div class="ac grow"><input type="search" id="buscar-cliente" placeholder="Consumidor final — buscar por nombre o DNI" autocomplete="off"></div>
+            {% if current_user.tiene_permiso('clientes.gestionar') %}
+            <button type="button" class="btn btn-icon" data-action="open-modal" data-target="modal-cliente" aria-label="Nuevo cliente" title="Nuevo cliente">{{ icon('user-plus','sm') }}</button>
+            {% endif %}
+          </div>
+        </div>
+
+        <label class="mt-2" style="display:block">Método de pago</label>
+        <div class="pay-methods mt-1">
+          {% set iconos = {'efectivo':'banknote','transferencia':'landmark','debito':'credit-card','credito':'credit-card','mercadopago':'smartphone','otro':'circle-ellipsis'} %}
+          {% for m in metodos %}
+          <label><input type="radio" name="metodo" value="{{ m.codigo }}" data-efectivo="{{ '1' if m.es_efectivo else '0' }}" {{ 'checked' if loop.first }}>
+            <span class="pm">{{ icon(iconos.get(m.codigo, 'coins')) }}{{ m.nombre }}</span></label>
+          {% endfor %}
+        </div>
+
+        <div class="mt-2">
+          <label for="desc-valor">Descuento general</label>
+          <div class="flex gap-1 mt-1">
+            <select id="desc-tipo" style="width:92px" aria-label="Tipo de descuento"><option value="porcentaje">%</option><option value="monto">$</option></select>
+            <input type="text" id="desc-valor" inputmode="decimal" placeholder="0" autocomplete="off">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="total-box">
+      <div class="row"><span>Subtotal</span><b id="t-subtotal">$ 0,00</b></div>
+      <div class="row"><span>Descuentos</span><b id="t-descuento">$ 0,00</b></div>
+      <div class="total"><span>TOTAL</span><b id="t-total">$ 0,00</b></div>
+      <button type="button" class="btn btn-accent btn-block cobrar" id="cobrar" disabled>{{ icon('circle-check') }} Cobrar <kbd>F4</kbd></button>
+    </div>
+
+    <div class="card" id="bloque-efectivo">
+      <div class="card-body">
+        <div class="flex gap-2">
+          <div class="field grow"><label for="recibido">Paga con</label>
+            <div class="input-group"><span>$</span><input type="text" id="recibido" inputmode="decimal" placeholder="Monto recibido" autocomplete="off"></div>
+          </div>
+          <div class="right"><div class="xsmall muted">Vuelto</div><div class="vuelto" id="vuelto">—</div></div>
+        </div>
+        <div class="chips mt-1" id="billetes"></div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<div class="pos-mobile-bar no-print">
+  <div class="grow"><div class="xsmall" style="opacity:.7">Total</div><b id="m-total">$ 0,00</b></div>
+  <a href="#panel-cobro" class="btn btn-accent">Cobrar</a>
+</div>
+
+<dialog class="modal" id="modal-exito">
+  <div class="modal-body center" style="padding:2rem 1.5rem 1.2rem">
+    <div class="success-check">{{ icon('check') }}</div>
+    <h2 id="exito-titulo">Venta registrada</h2>
+    <p class="kpi-value mt-1 mb-0" id="exito-total"></p>
+    <p class="vuelto mt-1 hidden" id="exito-vuelto"></p>
+  </div>
+  <div class="modal-foot" style="justify-content:center">
+    <a class="btn" id="exito-imprimir" href="#" target="_blank" rel="noopener">{{ icon('printer','sm') }} Comprobante</a>
+    <button type="button" class="btn btn-primary" id="exito-nueva">Nueva venta <kbd>Enter</kbd></button>
+  </div>
+</dialog>
+
+{% if current_user.tiene_permiso('clientes.gestionar') %}
+<dialog class="modal" id="modal-cliente">
+  <form id="form-cliente" data-multi="1">
+    <div class="modal-head"><h2>Nuevo cliente</h2><button type="button" class="btn btn-ghost btn-icon" data-action="close-modal" aria-label="Cerrar">{{ icon('x') }}</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="field col-6"><label class="req" for="c-nombre">Nombre</label><input id="c-nombre" name="nombre" required maxlength="80"></div>
+        <div class="field col-6"><label class="req" for="c-apellido">Apellido</label><input id="c-apellido" name="apellido" required maxlength="80"></div>
+        <div class="field col-6"><label for="c-dni">DNI</label><input id="c-dni" name="dni" inputmode="numeric" maxlength="15"></div>
+        <div class="field col-6"><label for="c-tel">Teléfono</label><input id="c-tel" name="telefono" type="tel" maxlength="30"></div>
+        <div class="field col-12"><label for="c-email">Email</label><input id="c-email" name="email" type="email" maxlength="120"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn" data-action="close-modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar y usar</button></div>
+  </form>
+</dialog>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/pos.js') }}"></script>{% endblock %}

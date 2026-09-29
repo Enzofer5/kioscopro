@@ -1,0 +1,132 @@
+{% from "partials/macros.html" import icon %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" content="#10201b">
+  <title>{% block title %}Inicio{% endblock %} · {{ negocio.nombre }}</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% set ep = request.endpoint or '' %}
+{% set bp = request.blueprint or '' %}
+<div class="app">
+  <aside class="sidebar" id="sidebar" aria-label="Menú principal">
+    <div class="brand">
+      <div class="brand-mark">K</div>
+      <div>
+        <div class="brand-name">KioscoPro</div>
+        <div class="brand-sub">{{ negocio.nombre }}</div>
+      </div>
+    </div>
+    <nav class="nav">
+      {% if current_user.tiene_permiso('ventas.crear') %}
+      <a href="{{ url_for('ventas.pos') }}" class="pos-link {{ 'active' if ep == 'ventas.pos' }}">{{ icon('scan-barcode') }} Nueva venta <kbd>F9</kbd></a>
+      {% endif %}
+      <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if bp == 'dashboard' }}">{{ icon('layout-dashboard') }} Dashboard</a>
+
+      <div class="nav-title">Operación</div>
+      {% if current_user.tiene_permiso('caja.operar') %}
+      <a href="{{ url_for('caja.index') }}" class="{{ 'active' if bp == 'caja' and ep != 'caja.historial' }}">{{ icon('wallet') }} Caja</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('ventas.historial') %}
+      <a href="{{ url_for('ventas.historial') }}" class="{{ 'active' if ep in ('ventas.historial', 'ventas.detalle') }}">{{ icon('history') }} Historial de ventas</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('clientes.ver') %}
+      <a href="{{ url_for('clientes.lista') }}" class="{{ 'active' if bp == 'clientes' }}">{{ icon('users') }} Clientes</a>
+      {% endif %}
+
+      {% if current_user.tiene_permiso('productos.ver', 'stock.ver', 'compras.gestionar', 'proveedores.gestionar') %}
+      <div class="nav-title">Mercadería</div>
+      {% endif %}
+      {% if current_user.tiene_permiso('productos.ver') %}
+      <a href="{{ url_for('productos.lista') }}" class="{{ 'active' if bp == 'productos' }}">{{ icon('package') }} Productos</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('stock.ver') %}
+      <a href="{{ url_for('stock.index') }}" class="{{ 'active' if bp == 'stock' }}">{{ icon('boxes') }} Stock</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('compras.gestionar') %}
+      <a href="{{ url_for('compras.lista') }}" class="{{ 'active' if bp == 'compras' }}">{{ icon('shopping-bag') }} Compras</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('proveedores.gestionar') %}
+      <a href="{{ url_for('proveedores.lista') }}" class="{{ 'active' if bp == 'proveedores' }}">{{ icon('truck') }} Proveedores</a>
+      {% endif %}
+
+      {% if current_user.tiene_permiso('gastos.gestionar', 'reportes.ver', 'caja.historial', 'empleados.gestionar', 'usuarios.gestionar') %}
+      <div class="nav-title">Administración</div>
+      {% endif %}
+      {% if current_user.tiene_permiso('reportes.ver') %}
+      <a href="{{ url_for('reportes.ventas') }}" class="{{ 'active' if bp == 'reportes' }}">{{ icon('chart-column') }} Reportes</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('gastos.gestionar') %}
+      <a href="{{ url_for('gastos.index') }}" class="{{ 'active' if bp == 'gastos' }}">{{ icon('receipt') }} Gastos</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('caja.historial') %}
+      <a href="{{ url_for('caja.historial') }}" class="{{ 'active' if ep == 'caja.historial' }}">{{ icon('clipboard-list') }} Cierres de caja</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('empleados.gestionar') %}
+      <a href="{{ url_for('empleados.lista') }}" class="{{ 'active' if bp == 'empleados' }}">{{ icon('briefcase') }} Empleados</a>
+      {% endif %}
+      {% if current_user.tiene_permiso('usuarios.gestionar') %}
+      <a href="{{ url_for('usuarios.lista') }}" class="{{ 'active' if bp == 'usuarios' }}">{{ icon('user-cog') }} Usuarios</a>
+      {% endif %}
+    </nav>
+    <div class="side-foot">
+      {% if caja_actual %}
+        <span class="caja-pill abierta"><span class="dot"></span>Caja abierta · #{{ caja_actual.id }}</span>
+      {% else %}
+        <span class="caja-pill cerrada"><span class="dot"></span>Caja cerrada</span>
+      {% endif %}
+    </div>
+  </aside>
+  <div class="backdrop" data-action="close-nav"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost btn-icon menu-btn" type="button" data-action="toggle-nav" aria-label="Abrir menú">{{ icon('menu') }}</button>
+      <div class="page-title">{% block page_title %}{{ self.title() }}{% endblock %}</div>
+      <div class="spacer"></div>
+      {% block topbar_extra %}{% endblock %}
+      <div class="user-menu">
+        <button class="user-btn" type="button" data-action="toggle-dropdown" aria-haspopup="true" aria-expanded="false">
+          <span class="avatar">{{ current_user.iniciales }}</span>
+          <span class="user-info"><b>{{ current_user.nombre_completo }}</b><span>{{ current_user.rol.nombre }}</span></span>
+        </button>
+        <div class="dropdown" role="menu">
+          <a href="{{ url_for('auth.perfil') }}">{{ icon('user', 'sm') }} Mi perfil</a>
+          <a href="{{ url_for('auth.cambiar_password') }}">{{ icon('key-round', 'sm') }} Cambiar contraseña</a>
+          <hr class="mt-0 mb-0">
+          <form method="post" action="{{ url_for('auth.logout') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">{{ icon('log-out', 'sm') }} Cerrar sesión</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% if mensajes %}
+      <div class="flashes">
+        {% for cat, msg in mensajes %}
+        <div class="alert alert-{{ cat if cat in ('success','danger','warning','info') else 'info' }}" role="alert">
+          {{ icon({'success':'circle-check','danger':'circle-x','warning':'triangle-alert'}.get(cat, 'info')) }}
+          <span>{{ msg }}</span>
+          <button class="close" type="button" data-action="dismiss" aria-label="Cerrar">{{ icon('x', 'sm') }}</button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, thumb %}
+{% set editando = producto is not none %}
+{% block title %}{{ 'Editar producto' if editando else 'Nuevo producto' }}{% endblock %}
+{% macro val(campo, defecto='') -%}{{ form.get(campo) if form.get(campo) is not none else (producto[campo] if editando and producto[campo] is not none else defecto) }}{%- endmacro %}
+{% macro sel(campo, id) -%}{{ 'selected' if (form.get(campo) or (producto[campo] if editando else ''))|string == id|string }}{%- endmacro %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ 'Editar: ' ~ producto.nombre if editando else 'Nuevo producto' }}</h1><p>Los campos con * son obligatorios.</p></div>
+  <div class="page-actions"><a href="{{ url_for('productos.detalle', producto_id=producto.id) if editando else url_for('productos.lista') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a></div>
+</div>
+<form method="post" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="grid grid-main">
+    <div class="card">
+      <div class="card-head"><h2>Datos del producto</h2></div>
+      <div class="card-body form-grid">
+        <div class="field col-8"><label class="req" for="nombre">Nombre</label><input id="nombre" name="nombre" value="{{ val('nombre') }}" required maxlength="120" autofocus></div>
+        <div class="field col-4"><label for="codigo_barras">Código de barras</label><input id="codigo_barras" name="codigo_barras" value="{{ val('codigo_barras') }}" maxlength="32" inputmode="numeric" placeholder="Escanealo acá"></div>
+        <div class="field col-4"><label class="req" for="categoria_id">Categoría</label>
+          <select id="categoria_id" name="categoria_id" required><option value="">Elegí…</option>
+          {% for c in categorias %}{% if c.activo or (editando and producto.categoria_id == c.id) %}<option value="{{ c.id }}" {{ sel('categoria_id', c.id) }}>{{ c.nombre }}</option>{% endif %}{% endfor %}</select></div>
+        <div class="field col-4"><label for="marca_id">Marca</label>
+          <select id="marca_id" name="marca_id"><option value="">Sin marca</option>
+          {% for m in marcas %}{% if m.activo or (editando and producto.marca_id == m.id) %}<option value="{{ m.id }}" {{ sel('marca_id', m.id) }}>{{ m.nombre }}</option>{% endif %}{% endfor %}</select></div>
+        <div class="field col-4"><label class="req" for="unidad_id">Unidad de medida</label>
+          <select id="unidad_id" name="unidad_id" required>
+          {% for u in unidades %}<option value="{{ u.id }}" {{ sel('unidad_id', u.id) }}>{{ u.nombre }} ({{ u.abreviatura }})</option>{% endfor %}</select></div>
+        <div class="field col-12"><label for="descripcion">Descripción</label><textarea id="descripcion" name="descripcion" maxlength="2000">{{ val('descripcion') }}</textarea></div>
+      </div>
+      <div class="card-head" style="border-top:1px solid var(--border)"><h2>Precios y stock</h2></div>
+      <div class="card-body form-grid">
+        <div class="field col-4"><label class="req" for="precio_compra">Precio de compra</label><div class="input-group"><span>$</span><input id="precio_compra" name="precio_compra" value="{{ val('precio_compra', '0') }}" inputmode="decimal" required></div></div>
+        <div class="field col-4"><label class="req" for="precio_venta">Precio de venta</label><div class="input-group"><span>$</span><input id="precio_venta" name="precio_venta" value="{{ val('precio_venta', '0') }}" inputmode="decimal" required></div></div>
+        <div class="field col-4"><label>Margen</label><input id="margen" readonly value="—" tabindex="-1"></div>
+        {% if not editando %}
+        <div class="field col-4"><label for="stock_inicial">Stock inicial</label><input id="stock_inicial" name="stock_inicial" value="{{ form.get('stock_inicial', '0') }}" inputmode="decimal"><span class="hint">Queda registrado como movimiento de entrada.</span></div>
+        {% else %}
+        <div class="field col-4"><label>Stock actual</label><input readonly value="{{ producto.stock_actual|cantidad }} {{ producto.unidad.abreviatura }}" tabindex="-1"><span class="hint">Se modifica desde <a href="{{ url_for('stock.movimiento', producto_id=producto.id) }}">Stock</a> o Compras.</span></div>
+        {% endif %}
+        <div class="field col-4"><label for="stock_minimo">Stock mínimo</label><input id="stock_minimo" name="stock_minimo" value="{{ val('stock_minimo', '0') }}" inputmode="decimal"><span class="hint">Al llegar a este valor se genera una alerta.</span></div>
+        <div class="field col-12"><label class="check"><input type="checkbox" name="confirmar_precio" value="1" {{ 'checked' if form.get('confirmar_precio') }}> Confirmo el precio aunque sea menor al costo</label></div>
+      </div>
+    </div>
+    <div class="card" style="align-self:start">
+      <div class="card-head"><h2>Imagen</h2></div>
+      <div class="card-body">
+        {% if editando and producto.imagen %}
+          <img src="{{ url_for('static', filename='uploads/productos/' ~ producto.imagen) }}" alt="" style="width:100%;border-radius:10px;border:1px solid var(--border);margin-bottom:.8rem">
+          <label class="check mb-1"><input type="checkbox" name="quitar_imagen" value="1"> Quitar imagen</label>
+        {% endif %}
+        <div class="field"><label for="imagen">{{ 'Reemplazar imagen' if editando and producto.imagen else 'Subir imagen' }}</label><input type="file" id="imagen" name="imagen" accept="image/png,image/jpeg,image/webp"><span class="hint">JPG, PNG o WEBP, hasta 4 MB. Se optimiza automáticamente.</span></div>
+      </div>
+      <div class="card-foot">
+        <div class="form-actions" style="padding:0">
+          {% if not editando %}<button type="submit" name="otro" value="1" class="btn">Guardar y cargar otro</button>{% endif %}
+          <button type="submit" class="btn btn-primary">{{ icon('check','sm') }} Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/formularios.js') }}"></script>{% endblock %}

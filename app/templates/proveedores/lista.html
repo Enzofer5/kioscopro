@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio, activo %}
+{% block title %}Proveedores{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Proveedores</h1><p>Buscá por razón social, CUIT o contacto.</p></div>
+  <div class="page-actions"><a href="{{ url_for('proveedores.nuevo') }}" class="btn btn-primary">{{ icon('plus','sm') }} Nuevo proveedor</a></div>
+</div>
+<div class="card mb-2">
+  <form method="get" class="card-body filters" data-clean>
+    <div class="field" style="grid-column:span 2"><label for="q">Buscar</label><input type="search" id="q" name="q" value="{{ request.args.get('q','') }}" placeholder="Razón social, CUIT o contacto"></div>
+    <div class="field"><label for="estado">Estado</label><select id="estado" name="estado"><option value="">Todos</option>
+      <option value="activos" {{ 'selected' if request.args.get('estado') == 'activos' }}>Activos</option>
+      <option value="inactivos" {{ 'selected' if request.args.get('estado') == 'inactivos' }}>Inactivos</option></select></div>
+    <div class="actions"><button type="submit" class="btn btn-primary">{{ icon('search','sm') }} Buscar</button><a href="{{ url_for('proveedores.lista', estado='activos') }}" class="btn btn-ghost">Ver activos</a></div>
+  </form>
+</div>
+<div class="card">
+{% if not buscado %}
+  {{ vacio("Buscá un proveedor", "O tocá «Ver activos» para listarlos.", "truck") }}
+{% elif not paginacion.items %}
+  {{ vacio("Sin resultados", "") }}
+{% else %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Razón social</th><th>CUIT</th><th class="hide-sm">Contacto</th><th class="hide-sm">Teléfono</th><th>Estado</th><th></th></tr></thead>
+    <tbody>{% for p in paginacion.items %}
+      <tr class="{{ 'row-muted' if not p.activo }}">
+        <td><a href="{{ url_for('proveedores.detalle', proveedor_id=p.id) }}"><b>{{ p.razon_social }}</b></a></td>
+        <td class="mono">{{ p.cuit or '—' }}</td><td class="hide-sm">{{ p.contacto or '—' }}</td><td class="hide-sm">{{ p.telefono or '—' }}</td>
+        <td>{{ activo(p.activo) }}</td>
+        <td class="actions"><a class="btn btn-sm btn-icon" href="{{ url_for('proveedores.editar', proveedor_id=p.id) }}" aria-label="Editar">{{ icon('pencil','sm') }}</a></td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {{ paginar(paginacion) }}
+{% endif %}
+</div>
+{% endblock %}

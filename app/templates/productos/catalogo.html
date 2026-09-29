@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, activo, confirmar_post %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Categorías y marcas</h1><p>Administrá las listas usadas en los productos.</p></div>
+  <div class="page-actions"><a href="{{ url_for('productos.lista') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Productos</a></div>
+</div>
+<nav class="tabs">{% for k, t in otros %}<a href="{{ url_for('productos.catalogo', tipo=k) }}" class="{{ 'active' if k == tipo }}">{{ t }}</a>{% endfor %}</nav>
+<div class="grid grid-main">
+  <div class="card">
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Nombre</th><th class="num">Productos</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+      {% for it in items %}
+        <tr class="{{ 'row-muted' if not it.activo }}">
+          <td>
+            <form method="post" class="flex gap-1" data-multi="1">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="id" value="{{ it.id }}">
+              <input name="nombre" value="{{ it.nombre }}" maxlength="60" required aria-label="Nombre" style="max-width:260px">
+              <button class="btn btn-sm btn-icon" type="submit" title="Guardar nombre" aria-label="Guardar">{{ icon('check','sm') }}</button>
+            </form>
+          </td>
+          <td class="num">{{ conteos.get(it.id, 0) }}</td>
+          <td>{{ activo(it.activo, 'Activa', 'Inactiva') }}</td>
+          <td class="actions">
+            {{ confirmar_post(url_for('productos.catalogo_estado', tipo=tipo, item_id=it.id), 'Desactivar' if it.activo else 'Activar', 'btn btn-sm', '¿Cambiar el estado de «' ~ it.nombre ~ '»?') }}
+            {% if not conteos.get(it.id) %}{{ confirmar_post(url_for('productos.catalogo_eliminar', tipo=tipo, item_id=it.id), '', 'btn btn-sm btn-icon btn-outline-danger', '¿Eliminar «' ~ it.nombre ~ '»?', 'trash-2') }}{% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4" class="center muted">Todavía no hay {{ titulo|lower }}.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+  <div class="card" style="align-self:start">
+    <div class="card-head"><h2>Nueva {{ singular }}</h2></div>
+    <form method="post" class="card-body">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field"><label class="req" for="nombre-nuevo">Nombre</label><input id="nombre-nuevo" name="nombre" required maxlength="60"></div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">{{ icon('plus','sm') }} Agregar</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

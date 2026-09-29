@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, estado_venta %}
+{% block title %}Venta #{{ venta.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Venta #{{ venta.id }} {{ estado_venta(venta.estado) }}</h1>
+    <p>{{ venta.fecha|fecha }} · atendió {{ venta.usuario.nombre_completo }}</p>
+  </div>
+  <div class="page-actions">
+    <a href="{{ url_for('ventas.historial') }}" class="btn btn-ghost" data-action="back">{{ icon('arrow-left','sm') }} Volver</a>
+    <a href="{{ url_for('ventas.comprobante', venta_id=venta.id) }}?imprimir=1" target="_blank" rel="noopener" class="btn">{{ icon('printer','sm') }} Comprobante</a>
+    {% if venta.estado == 'completada' and current_user.tiene_permiso('ventas.anular') %}
+    <button type="button" class="btn btn-outline-danger" data-action="open-modal" data-target="modal-anular">{{ icon('ban','sm') }} Anular / devolver</button>
+    {% endif %}
+  </div>
+</div>
+
+{% if venta.anulacion %}
+<div class="alert alert-{{ 'danger' if venta.estado == 'anulada' else 'warning' }} mb-2">{{ icon('info') }}
+  <span><b>{{ 'Anulada' if venta.anulacion.tipo == 'anulacion' else 'Devuelta' }}</b> el {{ venta.anulacion.fecha|fecha }} por {{ venta.anulacion.usuario.nombre_completo }}.
+  Motivo: «{{ venta.anulacion.motivo }}». {{ 'Se reintegró el stock.' if venta.anulacion.reintegra_stock else 'No se reintegró stock.' }}</span>
+</div>
+{% endif %}
+
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-head"><h2>Productos</h2></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio</th><th class="num">Descuento</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>
+        {% for d in venta.detalles %}
+          <tr>
+            <td><b>{{ d.producto.nombre }}</b><div class="xsmall muted mono">{{ d.producto.codigo_barras or '' }}</div></td>
+            <td class="num">{{ d.cantidad|cantidad }}</td>
+            <td class="num">{{ d.precio_unitario|moneda }}</td>
+            <td class="num">{{ d.descuento|moneda if d.descuento > 0 else '—' }}</td>
+            <td class="num"><b>{{ d.subtotal|moneda }}</b></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Resumen</h2></div>
+    <div class="card-body">
+      <ul class="list-plain">
+        <li><span class="muted">Subtotal</span><b class="num">{{ venta.subtotal|moneda }}</b></li>
+        <li><span class="muted">Descuentos</span><b class="num">− {{ venta.descuento|moneda }}</b></li>
+        <li><span>Total</span><b class="num" style="font-size:1.25rem">{{ venta.total|moneda }}</b></li>
+        {% for p in venta.pagos %}
+        <li><span class="muted">Método de pago</span><span class="badge badge-brand">{{ p.metodo.nombre }}</span></li>
+        {% if p.monto_recibido %}<li><span class="muted">Recibido / vuelto</span><span class="num">{{ p.monto_recibido|moneda }} / {{ p.vuelto|moneda }}</span></li>{% endif %}
+        {% endfor %}
+        <li><span class="muted">Cliente</span><span>{% if venta.cliente %}<a href="{{ url_for('clientes.detalle', cliente_id=venta.cliente.id) }}">{{ venta.cliente.nombre_completo }}</a>{% else %}Consumidor final{% endif %}</span></li>
+        <li><span class="muted">Usuario</span><span>{{ venta.usuario.nombre_completo }}</span></li>
+        <li><span class="muted">Fecha y hora</span><span>{{ venta.fecha|fecha }}</span></li>
+        <li><span class="muted">Caja</span><span>{% if venta.caja_id %}#{{ venta.caja_id }}{% else %}—{% endif %}</span></li>
+        {% if current_user.tiene_permiso('dashboard.financiero') %}
+        <li><span class="muted">Costo / ganancia</span><span class="num">{{ venta.costo_total|moneda }} / <b>{{ (venta.total - venta.costo_total)|moneda }}</b></span></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% if venta.estado == 'completada' and current_user.tiene_permiso('ventas.anular') %}
+<dialog class="modal" id="modal-anular">
+  <form method="post" action="{{ url_for('ventas.anular', venta_id=venta.id) }}" data-confirm="¿Confirmás la anulación/devolución de la venta #{{ venta.id }}? Esta acción no se puede deshacer.">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="modal-head"><h2>Anular o devolver venta #{{ venta.id }}</h2><button type="button" class="btn btn-ghost btn-icon" data-action="close-modal" aria-label="Cerrar">{{ icon('x') }}</button></div>
+    <div class="modal-body">
+      <div class="field mb-2">
+        <label>Tipo de operación</label>
+        <label class="check"><input type="radio" name="tipo" value="anulacion" checked> Anulación <span class="muted small">(error de carga: se reintegra el stock)</span></label>
+        <label class="check"><input type="radio" name="tipo" value="devolucion"> Devolución <span class="muted small">(el cliente devuelve la compra)</span></label>
+      </div>
+      <div class="field mb-2" data-show-when="tipo=devolucion">
+        <label class="check"><input type="checkbox" name="reintegra_stock" value="1" checked> Reingresar la mercadería al stock</label>
+        <span class="hint">Destildá si el producto volvió dañado o vencido.</span>
+      </div>
+      <div class="field"><label class="req" for="motivo">Motivo</label><textarea id="motivo" name="motivo" required minlength="5" maxlength="255" placeholder="Ej.: se cobró un producto de más"></textarea></div>
+      <p class="small muted mt-1 mb-0">Se registrará un egreso de {{ venta.total|moneda }} en la caja abierta con el mismo método de pago. La venta no se elimina.</p>
+    </div>
+    <div class="modal-foot"><button type="button" class="btn" data-action="close-modal">Cancelar</button><button type="submit" class="btn btn-danger">Confirmar</button></div>
+  </form>
+</dialog>
+{% endif %}
+{% endblock %}
