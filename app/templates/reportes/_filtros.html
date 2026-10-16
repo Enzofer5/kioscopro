@@ -1,0 +1,25 @@
+{% from "partials/macros.html" import icon %}
+<div class="page-head">
+  <div><h1>Reportes</h1><p>Período: <b>{{ p.etiqueta }}</b> ({{ p.desde|solo_fecha }} – {{ p.hasta|solo_fecha }})</p></div>
+  <div class="page-actions no-print"><button type="button" class="btn" data-action="print">{{ icon('printer','sm') }} Imprimir</button></div>
+</div>
+<nav class="tabs no-print">
+  <a href="{{ url_for('reportes.ventas', periodo=p.periodo, desde=request.args.get('desde'), hasta=request.args.get('hasta')) }}" class="{{ 'active' if seccion == 'ventas' }}">Ventas</a>
+  <a href="{{ url_for('reportes.productos', periodo=p.periodo, desde=request.args.get('desde'), hasta=request.args.get('hasta')) }}" class="{{ 'active' if seccion == 'productos' }}">Productos</a>
+  <a href="{{ url_for('reportes.ganancias', periodo=p.periodo, desde=request.args.get('desde'), hasta=request.args.get('hasta')) }}" class="{{ 'active' if seccion == 'ganancias' }}">Ganancias</a>
+  <a href="{{ url_for('reportes.pagos', periodo=p.periodo, desde=request.args.get('desde'), hasta=request.args.get('hasta')) }}" class="{{ 'active' if seccion == 'pagos' }}">Métodos de pago</a>
+</nav>
+<div class="card mb-2 no-print">
+  <form method="get" class="card-body">
+    {% for k, v in request.args.items() if k not in ('periodo', 'desde', 'hasta') %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <div class="chips mb-1">
+      {% for clave, nombre in p.periodos if clave != 'rango' %}<a class="chip {{ 'active' if p.periodo == clave }}" href="{{ url_con(periodo=clave, desde=None, hasta=None) }}">{{ nombre }}</a>{% endfor %}
+    </div>
+    <div class="filters mt-1" style="grid-template-columns:repeat(auto-fit,minmax(150px,220px))">
+      <input type="hidden" name="periodo" value="rango">
+      <div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ p.desde.isoformat() }}"></div>
+      <div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ p.hasta.isoformat() }}"></div>
+      <div class="actions"><button type="submit" class="btn btn-primary">{{ icon('calendar','sm') }} Aplicar rango</button></div>
+    </div>
+  </form>
+</div>

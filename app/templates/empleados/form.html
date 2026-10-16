@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, campo %}
+{% set ed = empleado is not none %}
+{% macro v(c) -%}{{ form.get(c) if form.get(c) is not none else ((empleado[c] or '') if ed else '') }}{%- endmacro %}
+{% block title %}{{ 'Editar empleado' if ed else 'Nuevo empleado' }}{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ self.title() }}</h1></div><div class="page-actions"><a href="{{ url_for('empleados.lista') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a></div></div>
+<div class="card" style="max-width:860px">
+  <form method="post" class="card-body">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      {{ campo('nombre', 'Nombre', v('nombre'), req=True, attrs='maxlength="80" autofocus') }}
+      {{ campo('apellido', 'Apellido', v('apellido'), req=True, attrs='maxlength="80"') }}
+      {{ campo('dni', 'DNI', v('dni'), req=True, cls='col-4', attrs='maxlength="15" inputmode="numeric"') }}
+      {{ campo('puesto', 'Puesto', v('puesto'), req=True, cls='col-4', attrs='maxlength="60" list="puestos"') }}
+      {{ campo('fecha_ingreso', 'Fecha de ingreso', (form.get('fecha_ingreso') or (empleado.fecha_ingreso.isoformat() if ed else hoy.isoformat())), tipo='date', req=True, cls='col-4', attrs='max="' ~ hoy.isoformat() ~ '"') }}
+      {{ campo('telefono', 'Teléfono', v('telefono'), tipo='tel', attrs='maxlength="30"') }}
+      {{ campo('email', 'Email', v('email'), tipo='email', attrs='maxlength="120"') }}
+      <datalist id="puestos"><option value="Vendedor"><option value="Cajero"><option value="Encargado"><option value="Repositor"><option value="Administrativo"></datalist>
+    </div>
+    <p class="small muted mt-2 mb-0">{{ icon('info','sm') }} Para que el empleado ingrese al sistema, creale un usuario en <a href="{{ url_for('usuarios.lista') }}">Usuarios</a> y vinculalo.</p>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">{{ icon('check','sm') }} Guardar</button></div>
+  </form>
+</div>
+{% endblock %}

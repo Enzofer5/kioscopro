@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio, estado_venta %}
+{% block title %}Historial de ventas{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Historial de ventas</h1><p>Aplicá al menos un filtro para ver resultados.</p></div>
+</div>
+
+<div class="card mb-2">
+  <form method="get" class="card-body filters" data-clean>
+    <div class="field"><label for="numero">N° de venta</label><input type="text" inputmode="numeric" id="numero" name="numero" value="{{ request.args.get('numero','') }}" placeholder="Ej: 1520"></div>
+    <div class="field"><label for="fecha">Fecha</label><input type="date" id="fecha" name="fecha" value="{{ request.args.get('fecha','') }}"></div>
+    <div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ request.args.get('desde','') }}"></div>
+    <div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ request.args.get('hasta','') }}"></div>
+    <div class="field"><label for="usuario_id">Usuario</label>
+      <select id="usuario_id" name="usuario_id"><option value="">Todos</option>
+        {% for u in usuarios %}<option value="{{ u.id }}" {{ 'selected' if request.args.get('usuario_id') == u.id|string }}>{{ u.nombre_completo }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label for="cliente">Cliente</label><input type="text" id="cliente" name="cliente" value="{{ request.args.get('cliente','') }}" placeholder="Nombre o DNI"></div>
+    <div class="field"><label for="metodo">Método de pago</label>
+      <select id="metodo" name="metodo"><option value="">Todos</option>
+        {% for m in metodos %}<option value="{{ m.codigo }}" {{ 'selected' if request.args.get('metodo') == m.codigo }}>{{ m.nombre }}</option>{% endfor %}
+      </select></div>
+    <div class="field"><label for="estado">Estado</label>
+      <select id="estado" name="estado"><option value="">Todos</option>
+        {% for e in estados %}<option value="{{ e }}" {{ 'selected' if request.args.get('estado') == e }}>{{ e|capitalize }}</option>{% endfor %}
+      </select></div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary">{{ icon('search','sm') }} Buscar</button>
+      <a href="{{ url_for('ventas.historial') }}" class="btn btn-ghost">Limpiar</a>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  {% if not buscado %}
+    {% call vacio("Buscá ventas con los filtros", "Por rendimiento y privacidad, el historial no se muestra completo.", "funnel") %}
+      <div class="chips" style="justify-content:center">
+        <a class="chip" href="{{ url_for('ventas.historial', fecha=ahora().strftime('%Y-%m-%d')) }}">Ventas de hoy</a>
+        <a class="chip" href="{{ url_for('ventas.historial', estado='anulada') }}">Anuladas</a>
+        <a class="chip" href="{{ url_for('ventas.historial', estado='devuelta') }}">Devueltas</a>
+      </div>
+    {% endcall %}
+  {% elif not paginacion.items %}
+    {{ vacio("Sin resultados", "Probá con otros filtros.") }}
+  {% else %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>N°</th><th>Fecha y hora</th><th>Cliente</th><th class="hide-sm">Usuario</th><th>Pago</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody>
+      {% for v in paginacion.items %}
+        <tr class="{{ 'row-muted' if v.estado != 'completada' }}">
+          <td class="mono"><a href="{{ url_for('ventas.detalle', venta_id=v.id) }}">#{{ v.id }}</a></td>
+          <td class="nowrap">{{ v.fecha|fecha }}</td>
+          <td>{{ v.cliente.nombre_completo if v.cliente else 'Consumidor final' }}</td>
+          <td class="hide-sm">{{ v.usuario.nombre_completo }}</td>
+          <td>{{ v.metodo_principal.nombre if v.metodo_principal else '—' }}</td>
+          <td>{{ estado_venta(v.estado) }}</td>
+          <td class="num"><b>{{ v.total|moneda }}</b></td>
+          <td class="actions"><a class="btn btn-sm" href="{{ url_for('ventas.detalle', venta_id=v.id) }}">{{ icon('eye','sm') }} Ver</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ paginar(paginacion) }}
+  {% endif %}
+</div>
+{% endblock %}

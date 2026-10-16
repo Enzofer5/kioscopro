@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Movimiento de stock{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Registrar movimiento de stock</h1><p>Entradas, salidas y ajustes manuales quedan en el historial con tu usuario.</p></div>
+  <div class="page-actions"><a href="{{ url_for('stock.index') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a></div>
+</div>
+<div class="card" style="max-width:720px">
+  <form method="post" class="card-body" id="form-mov">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="producto_id" id="producto_id" value="{{ producto.id if producto else form.get('producto_id','') }}">
+    <div class="form-grid">
+      <div class="field col-12">
+        <label class="req" for="buscar-prod">Producto</label>
+        <div class="ac"><input type="search" id="buscar-prod" placeholder="Buscá por nombre o escaneá el código" autocomplete="off" data-api="{{ url_for('ventas.api_productos') }}" {{ 'autofocus' if not producto }}></div>
+        <div id="prod-elegido" class="cliente-sel mt-1 {{ '' if producto else 'hidden' }}">
+          {{ icon('package','sm') }}<span class="grow" id="prod-nombre">{% if producto %}{{ producto.nombre }} — stock actual: {{ producto.stock_actual|cantidad }} {{ producto.unidad.abreviatura }}{% endif %}</span>
+        </div>
+      </div>
+      <div class="field col-12">
+        <label class="req">Tipo de movimiento</label>
+        <div class="chips">
+          {% set tipo_sel = form.get('tipo', 'entrada') %}
+          <label class="check"><input type="radio" name="tipo" value="entrada" {{ 'checked' if tipo_sel == 'entrada' }}> Entrada (suma)</label>
+          <label class="check"><input type="radio" name="tipo" value="salida" {{ 'checked' if tipo_sel == 'salida' }}> Salida (resta)</label>
+          <label class="check"><input type="radio" name="tipo" value="ajuste" {{ 'checked' if tipo_sel == 'ajuste' }}> Ajuste (stock contado)</label>
+        </div>
+      </div>
+      <div class="field col-6">
+        <label class="req" for="cantidad"><span data-show-when="tipo=entrada|salida">Cantidad</span><span data-show-when="tipo=ajuste">Stock real contado</span></label>
+        <input id="cantidad" name="cantidad" inputmode="decimal" required value="{{ form.get('cantidad','') }}" {{ 'autofocus' if producto }}>
+      </div>
+      <div class="field col-6">
+        <label class="req" for="motivo">Motivo</label>
+        <input id="motivo" name="motivo" required maxlength="255" list="motivos" value="{{ form.get('motivo','') }}" placeholder="Ej.: rotura, vencimiento, recuento">
+        <datalist id="motivos"><option value="Recuento de inventario"><option value="Rotura"><option value="Vencimiento"><option value="Consumo interno"><option value="Devolución a proveedor"><option value="Ingreso sin factura"></datalist>
+      </div>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">{{ icon('check','sm') }} Registrar</button></div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/stock.js') }}"></script>{% endblock %}

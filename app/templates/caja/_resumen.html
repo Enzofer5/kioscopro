@@ -1,0 +1,21 @@
+{# Tabla de arqueo reutilizada en caja abierta, cierre y detalle #}
+<ul class="list-plain">
+  <li><span>Monto inicial</span><b class="num">{{ resumen.inicial|moneda }}</b></li>
+  <li><span>Ventas en efectivo</span><b class="num text-success">+ {{ resumen.ventas_efectivo|moneda }}</b></li>
+  <li><span>Ingresos manuales</span><b class="num text-success">+ {{ resumen.ingresos|moneda }}</b></li>
+  <li><span>Egresos</span><b class="num text-danger">− {{ resumen.egresos|moneda }}</b></li>
+  <li><span>Retiros</span><b class="num text-danger">− {{ resumen.retiros|moneda }}</b></li>
+  <li><span>Gastos pagados de caja</span><b class="num text-danger">− {{ resumen.gastos|moneda }}</b></li>
+  <li><span>Anulaciones / devoluciones en efectivo</span><b class="num text-danger">− {{ resumen.anulaciones_efectivo|moneda }}</b></li>
+  <li style="border-top:2px solid var(--border);padding-top:.7rem"><span><b>Dinero esperado en caja</b></span><b class="num" style="font-size:1.2rem">{{ resumen.esperado|moneda }}</b></li>
+</ul>
+<h3 class="mt-2 mb-1">Ventas por método de pago</h3>
+<ul class="list-plain">
+  <li><span>Efectivo</span><span class="num">{{ resumen.ventas_efectivo|moneda }}</span></li>
+  <li><span>Transferencia</span><span class="num">{{ resumen.ventas_transferencia|moneda }}</span></li>
+  <li><span>Tarjeta (débito {{ resumen.ventas_debito|moneda }} · crédito {{ resumen.ventas_credito|moneda }})</span><span class="num">{{ resumen.ventas_tarjeta|moneda }}</span></li>
+  <li><span>Mercado Pago</span><span class="num">{{ resumen.ventas_mercadopago|moneda }}</span></li>
+  <li><span>Otro</span><span class="num">{{ resumen.ventas_otro|moneda }}</span></li>
+  <li><span><b>Total vendido</b> ({{ resumen.cantidad_ventas }} ventas)</span><b class="num">{{ resumen.ventas_total|moneda }}</b></li>
+  {% if resumen.anulaciones > 0 %}<li><span>Anulaciones (todos los medios)</span><span class="num text-danger">− {{ resumen.anulaciones|moneda }}</span></li>{% endif %}
+</ul>

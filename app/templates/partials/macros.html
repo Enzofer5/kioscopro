@@ -1,0 +1,70 @@
+{# Macros reutilizables de la interfaz #}
+
+{% macro icon(name, cls="") -%}
+<svg class="i {{ cls }}" aria-hidden="true"><use href="{{ url_for('static', filename='img/icons.svg') }}#i-{{ name }}"></use></svg>
+{%- endmacro %}
+
+{% macro paginar(p) -%}
+{% if p and p.pages > 1 %}
+<nav class="pagination" aria-label="Paginación">
+  <span class="muted small">Mostrando {{ p.first }}–{{ p.last }} de {{ p.total }}</span>
+  <div class="pages">
+    {% if p.has_prev %}<a href="{{ url_con(page=p.prev_num) }}" aria-label="Anterior">{{ icon('chevron-left', 'sm') }}</a>{% endif %}
+    {% for n in p.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+      {% if n %}
+        {% if n == p.page %}<span class="cur">{{ n }}</span>{% else %}<a href="{{ url_con(page=n) }}">{{ n }}</a>{% endif %}
+      {% else %}<span class="muted">…</span>{% endif %}
+    {% endfor %}
+    {% if p.has_next %}<a href="{{ url_con(page=p.next_num) }}" aria-label="Siguiente">{{ icon('chevron-right', 'sm') }}</a>{% endif %}
+  </div>
+</nav>
+{% elif p and p.total %}
+<div class="pagination"><span class="muted small">{{ p.total }} resultado{{ 's' if p.total != 1 }}</span></div>
+{% endif %}
+{%- endmacro %}
+
+{% macro vacio(titulo, texto="", ico="search") -%}
+<div class="empty">
+  {{ icon(ico) }}
+  <h3>{{ titulo }}</h3>
+  {% if texto %}<p class="small">{{ texto }}</p>{% endif %}
+  {{ caller() if caller }}
+</div>
+{%- endmacro %}
+
+{% macro estado_venta(estado) -%}
+{% if estado == 'completada' %}<span class="badge badge-success">Completada</span>
+{% elif estado == 'anulada' %}<span class="badge badge-danger">Anulada</span>
+{% elif estado == 'devuelta' %}<span class="badge badge-warning">Devuelta</span>
+{% else %}<span class="badge">{{ estado }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro activo(valor, si="Activo", no="Inactivo") -%}
+{% if valor %}<span class="badge badge-success">{{ si }}</span>{% else %}<span class="badge">{{ no }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro stock_badge(p) -%}
+{% if p.agotado %}<span class="badge badge-danger">Sin stock</span>
+{% elif p.bajo_stock %}<span class="badge badge-warning">Bajo stock</span>
+{% else %}<span class="badge badge-success">OK</span>{% endif %}
+{%- endmacro %}
+
+{% macro thumb(p) -%}
+{% if p.imagen %}<img class="thumb" src="{{ url_for('static', filename='uploads/productos/' ~ p.imagen) }}" alt="" loading="lazy">
+{% else %}<span class="thumb">{{ icon('package') }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro campo(nombre, etiqueta, valor="", tipo="text", req=False, cls="col-6", hint="", attrs="") -%}
+<div class="field {{ cls }}">
+  <label for="f-{{ nombre }}" {% if req %}class="req"{% endif %}>{{ etiqueta }}</label>
+  <input type="{{ tipo }}" id="f-{{ nombre }}" name="{{ nombre }}" value="{{ valor if valor is not none else '' }}" {% if req %}required{% endif %} {{ attrs|safe }}>
+  {% if hint %}<span class="hint">{{ hint }}</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro confirmar_post(url, texto, cls="btn btn-sm", pregunta="¿Confirmás esta acción?", ico=None) -%}
+<form method="post" action="{{ url }}" class="inline" data-confirm="{{ pregunta }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="{{ cls }}">{% if ico %}{{ icon(ico, 'sm') }}{% endif %}{{ texto }}</button>
+</form>
+{%- endmacro %}

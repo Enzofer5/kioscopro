@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio, activo %}
+{% block title %}Clientes{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Clientes</h1><p>Buscá por nombre, apellido, DNI, teléfono o email.</p></div>
+  {% if current_user.tiene_permiso('clientes.gestionar') %}<div class="page-actions"><a href="{{ url_for('clientes.nuevo') }}" class="btn btn-primary">{{ icon('user-plus','sm') }} Nuevo cliente</a></div>{% endif %}
+</div>
+<div class="card mb-2">
+  <form method="get" class="card-body filters" data-clean>
+    <div class="field" style="grid-column:span 2"><label for="q">Buscar</label><input type="search" id="q" name="q" value="{{ request.args.get('q','') }}" placeholder="Ej: García o 30123456" autofocus></div>
+    <div class="field"><label for="estado">Estado</label><select id="estado" name="estado"><option value="">Todos</option>
+      <option value="activos" {{ 'selected' if request.args.get('estado') == 'activos' }}>Activos</option>
+      <option value="inactivos" {{ 'selected' if request.args.get('estado') == 'inactivos' }}>Inactivos</option></select></div>
+    <div class="actions"><button type="submit" class="btn btn-primary">{{ icon('search','sm') }} Buscar</button><a href="{{ url_for('clientes.lista', estado='activos') }}" class="btn btn-ghost">Ver activos</a></div>
+  </form>
+</div>
+<div class="card">
+{% if not buscado %}
+  {{ vacio("Buscá un cliente", "En el punto de venta el cliente es opcional.", "users") }}
+{% elif not paginacion.items %}
+  {{ vacio("Sin resultados", "") }}
+{% else %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Cliente</th><th>DNI</th><th class="hide-sm">Teléfono</th><th class="hide-sm">Email</th><th>Estado</th><th></th></tr></thead>
+    <tbody>{% for c in paginacion.items %}
+      <tr class="{{ 'row-muted' if not c.activo }}">
+        <td><a href="{{ url_for('clientes.detalle', cliente_id=c.id) }}"><b>{{ c.nombre_completo }}</b></a></td>
+        <td class="mono">{{ c.dni or '—' }}</td><td class="hide-sm">{{ c.telefono or '—' }}</td><td class="hide-sm">{{ c.email or '—' }}</td>
+        <td>{{ activo(c.activo) }}</td>
+        <td class="actions"><a class="btn btn-sm" href="{{ url_for('clientes.detalle', cliente_id=c.id) }}">{{ icon('eye','sm') }} Ver</a></td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {{ paginar(paginacion) }}
+{% endif %}
+</div>
+{% endblock %}

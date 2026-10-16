@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio %}
+{% block title %}Cierres de caja{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Cierres de caja</h1><p>Aperturas y cierres entre {{ desde|solo_fecha }} y {{ hasta|solo_fecha }}.</p></div></div>
+<div class="card mb-2">
+  <form method="get" class="card-body filters">
+    <div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ desde.isoformat() }}"></div>
+    <div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta.isoformat() }}"></div>
+    <div class="actions"><button class="btn btn-primary" type="submit">{{ icon('search','sm') }} Filtrar</button></div>
+  </form>
+</div>
+<div class="card">
+{% if not paginacion.items %}{{ vacio("Sin cajas en el período", "", "wallet") }}{% else %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Caja</th><th>Apertura</th><th>Cierre</th><th class="num">Inicial</th><th class="num">Esperado</th><th class="num">Declarado</th><th class="num">Diferencia</th><th></th></tr></thead>
+    <tbody>{% for c in paginacion.items %}
+      <tr>
+        <td class="mono">#{{ c.id }} {% if c.abierta %}<span class="badge badge-success">Abierta</span>{% endif %}</td>
+        <td class="small">{{ c.fecha_apertura|fecha }}<div class="muted">{{ c.usuario_apertura.nombre_completo }}</div></td>
+        <td class="small">{% if c.fecha_cierre %}{{ c.fecha_cierre|fecha }}<div class="muted">{{ c.usuario_cierre.nombre_completo }}</div>{% else %}—{% endif %}</td>
+        <td class="num">{{ c.monto_inicial|moneda }}</td>
+        <td class="num">{{ c.monto_esperado|moneda if c.monto_esperado is not none else '—' }}</td>
+        <td class="num">{{ c.monto_declarado|moneda if c.monto_declarado is not none else '—' }}</td>
+        <td class="num">{% if c.diferencia is not none %}<b class="{{ 'text-danger' if c.diferencia < 0 else 'text-warning' if c.diferencia > 0 else 'text-success' }}">{{ c.diferencia|moneda }}</b>{% else %}—{% endif %}</td>
+        <td class="actions"><a class="btn btn-sm" href="{{ url_for('caja.detalle', caja_id=c.id) }}">{{ icon('eye','sm') }} Ver</a></td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {{ paginar(paginacion) }}
+{% endif %}
+</div>
+{% endblock %}

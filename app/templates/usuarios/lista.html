@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, activo, confirmar_post %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Usuarios y permisos</h1><p>Controlá quién accede al sistema y qué puede hacer.</p></div>
+  <div class="page-actions"><a href="{{ url_for('usuarios.nuevo') }}" class="btn btn-primary">{{ icon('user-plus','sm') }} Nuevo usuario</a></div>
+</div>
+<div class="card mb-2">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Usuario</th><th>Rol</th><th class="hide-sm">Empleado</th><th class="hide-sm">Último acceso</th><th>Estado</th><th></th></tr></thead>
+    <tbody>{% for u in usuarios %}
+      {% set editable = not u.es_dueno or current_user.es_dueno %}
+      <tr class="{{ 'row-muted' if not u.activo }}">
+        <td><div class="flex gap-1"><span class="avatar">{{ u.iniciales }}</span><div><b>{{ u.nombre_completo }}</b><div class="xsmall muted"><span class="mono">{{ u.username }}</span> · {{ u.email }}</div></div></div></td>
+        <td><span class="badge {{ 'badge-warning' if u.es_dueno else 'badge-brand' }}">{{ u.rol.nombre }}</span>{% if u.debe_cambiar_password %} <span class="badge" title="Debe cambiar la contraseña">{{ icon('key-round','sm') }}</span>{% endif %}</td>
+        <td class="hide-sm">{{ u.empleado.nombre_completo if u.empleado else '—' }}</td>
+        <td class="hide-sm small">{{ u.ultimo_acceso|fecha or 'Nunca' }}</td>
+        <td>{{ activo(u.activo) }}</td>
+        <td class="actions">
+          {% if editable %}
+          <a class="btn btn-sm btn-icon" href="{{ url_for('usuarios.editar', usuario_id=u.id) }}" title="Editar" aria-label="Editar">{{ icon('pencil','sm') }}</a>
+          {{ confirmar_post(url_for('usuarios.reset_password', usuario_id=u.id), '', 'btn btn-sm btn-icon', '¿Generar una contraseña temporal para ' ~ u.username ~ '? La actual dejará de funcionar.', 'key-round') }}
+          {% if u.id != current_user.id %}{{ confirmar_post(url_for('usuarios.estado', usuario_id=u.id), 'Desactivar' if u.activo else 'Activar', 'btn btn-sm ' ~ ('btn-outline-danger' if u.activo else ''), '¿Desactivar a ' ~ u.username ~ '? Se cerrarán sus sesiones.' if u.activo else '¿Activar a ' ~ u.username ~ '?') }}{% endif %}
+          {% endif %}
+        </td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Permisos por rol</h2><span class="muted small">Definidos por el sistema</span></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Permiso</th>{% for r in roles %}<th class="center">{{ r.nombre }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for codigo, desc in permisos.items() %}
+      <tr><td>{{ desc }}<div class="xsmall muted mono">{{ codigo }}</div></td>
+      {% for r in roles %}<td class="center">{% if codigo in r.permisos|map(attribute='codigo')|list %}<span class="text-success">{{ icon('check','sm') }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}</tr>
+    {% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

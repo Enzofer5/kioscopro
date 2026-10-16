@@ -1,0 +1,53 @@
+{% from "partials/macros.html" import icon %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comprobante #{{ venta.id }} · {{ negocio.nombre }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="ticket-page">
+  <div class="ticket-actions">
+    <button type="button" class="btn btn-primary grow" data-action="print">{{ icon('printer','sm') }} Imprimir</button>
+    <button type="button" class="btn" id="cerrar-ventana">Cerrar</button>
+  </div>
+  <article class="ticket">
+    <h1>{{ negocio.nombre }}</h1>
+    {% if negocio.direccion %}<div class="c">{{ negocio.direccion }}</div>{% endif %}
+    {% if negocio.cuit %}<div class="c">CUIT {{ negocio.cuit }}</div>{% endif %}
+    {% if negocio.telefono %}<div class="c">Tel. {{ negocio.telefono }}</div>{% endif %}
+    <hr>
+    <div class="c"><b>COMPROBANTE DE VENTA</b><br>No válido como factura</div>
+    <hr>
+    <table>
+      <tr><td>N°</td><td class="r"><b>{{ '%08d'|format(venta.id) }}</b></td></tr>
+      <tr><td>Fecha</td><td class="r">{{ venta.fecha|fecha }}</td></tr>
+      <tr><td>Atendió</td><td class="r">{{ venta.usuario.nombre }}</td></tr>
+      {% if venta.cliente %}<tr><td>Cliente</td><td class="r">{{ venta.cliente.nombre_completo }}</td></tr>{% endif %}
+    </table>
+    {% if venta.estado != 'completada' %}<div class="anulada">VENTA {{ venta.estado|upper }}</div>{% endif %}
+    <hr>
+    <table>
+      {% for d in venta.detalles %}
+      <tr><td colspan="2">{{ d.producto.nombre }}</td></tr>
+      <tr><td>&nbsp;{{ d.cantidad|cantidad }} x {{ d.precio_unitario|moneda }}{% if d.descuento > 0 %} (-{{ d.descuento|moneda }}){% endif %}</td><td class="r">{{ d.subtotal|moneda }}</td></tr>
+      {% endfor %}
+    </table>
+    <hr>
+    <table>
+      <tr><td>Subtotal</td><td class="r">{{ venta.subtotal|moneda }}</td></tr>
+      {% if venta.descuento > 0 %}<tr><td>Descuentos</td><td class="r">-{{ venta.descuento|moneda }}</td></tr>{% endif %}
+      <tr class="tot"><td>TOTAL</td><td class="r">{{ venta.total|moneda }}</td></tr>
+      {% for p in venta.pagos %}
+      <tr><td>{{ p.metodo.nombre }}</td><td class="r">{{ (p.monto_recibido or p.monto)|moneda }}</td></tr>
+      {% if p.vuelto is not none and p.vuelto > 0 %}<tr><td>Vuelto</td><td class="r">{{ p.vuelto|moneda }}</td></tr>{% endif %}
+      {% endfor %}
+    </table>
+    <hr>
+    <div class="c">¡Gracias por su compra!</div>
+  </article>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/comprobante.js') }}"></script>
+</body>
+</html>

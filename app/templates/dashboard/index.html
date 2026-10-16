@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, thumb %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Hola, {{ current_user.nombre }}</h1>
+    <p>{{ ahora().strftime('%d/%m/%Y') }} · {% if caja_actual %}Caja #{{ caja_actual.id }} abierta desde las {{ caja_actual.fecha_apertura.strftime('%H:%M') }}{% else %}La caja está cerrada{% endif %}</p>
+  </div>
+  <div class="page-actions">
+    {% if current_user.tiene_permiso('ventas.crear') %}<a href="{{ url_for('ventas.pos') }}" class="btn btn-primary">{{ icon('scan-barcode','sm') }} Nueva venta</a>{% endif %}
+  </div>
+</div>
+
+{% if financiero %}
+<div class="grid grid-4 kpis mb-2">
+  <div class="card kpi">
+    <div class="kpi-label"><span class="kpi-icon">{{ icon('circle-dollar-sign','sm') }}</span>Ventas del día</div>
+    <div class="kpi-value">{{ hoy_.facturacion|moneda }}</div>
+    <div class="kpi-sub">{{ hoy_.cantidad }} venta{{ 's' if hoy_.cantidad != 1 }}</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-label"><span class="kpi-icon blue">{{ icon('calendar','sm') }}</span>Ventas del mes</div>
+    <div class="kpi-value">{{ mes.facturacion|moneda }}</div>
+    <div class="kpi-sub">{{ mes.cantidad }} ventas</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-label"><span class="kpi-icon amber">{{ icon('trending-up','sm') }}</span>Ganancia estimada (mes)</div>
+    <div class="kpi-value {{ 'text-danger' if mes.ganancia_neta < 0 }}">{{ mes.ganancia_neta|moneda }}</div>
+    <div class="kpi-sub">Bruta {{ mes.ganancia_bruta|moneda }} − gastos {{ mes.gastos|moneda }}</div>
+  </div>
+  <a class="card kpi" href="{{ url_for('caja.index') if current_user.tiene_permiso('caja.operar') else '#' }}">
+    <div class="kpi-label"><span class="kpi-icon">{{ icon('wallet','sm') }}</span>Dinero en caja</div>
+    <div class="kpi-value">{{ dinero_caja|moneda if dinero_caja is not none else '—' }}</div>
+    <div class="kpi-sub">{{ 'Efectivo esperado' if dinero_caja is not none else 'Caja cerrada' }}</div>
+  </a>
+  <div class="card kpi">
+    <div class="kpi-label"><span class="kpi-icon blue">{{ icon('receipt','sm') }}</span>Cantidad de ventas (hoy)</div>
+    <div class="kpi-value">{{ hoy_.cantidad }}</div>
+    <div class="kpi-sub">Ganancia bruta hoy {{ hoy_.ganancia_bruta|moneda }}</div>
+  </div>
+  <div class="card kpi">
+    <div class="kpi-label"><span class="kpi-icon amber">{{ icon('shopping-cart','sm') }}</span>Ticket promedio (hoy)</div>
+    <div class="kpi-value">{{ hoy_.ticket_promedio|moneda }}</div>
+    <div class="kpi-sub">Mes: {{ mes.ticket_promedio|moneda }}</div>
+  </div>
+  <a class="card kpi" href="{{ url_for('stock.alertas', tipo='bajo') }}">
+    <div class="kpi-label"><span class="kpi-icon amber">{{ icon('triangle-alert','sm') }}</span>Productos con bajo stock</div>
+    <div class="kpi-value">{{ bajo_stock }}</div>
+    <div class="kpi-sub">Stock actual ≤ stock mínimo</div>
+  </a>
+  <a class="card kpi" href="{{ url_for('stock.alertas', tipo='agotados') }}">
+    <div class="kpi-label"><span class="kpi-icon red">{{ icon('package-x','sm') }}</span>Productos agotados</div>
+    <div class="kpi-value {{ 'text-danger' if agotados }}">{{ agotados }}</div>
+    <div class="kpi-sub">Sin unidades disponibles</div>
+  </a>
+</div>
+{% else %}
+<div class="grid grid-3 mb-2">
+  <div class="card kpi">
+    <div class="kpi-label"><span class="kpi-icon">{{ icon('receipt','sm') }}</span>Mis ventas de hoy</div>
+    <div class="kpi-value">{{ mis_ventas[0] }}</div>
+    <div class="kpi-sub">Total {{ mis_ventas[1]|moneda }}</div>
+  </div>
+  <a class="card kpi" href="{{ url_for('stock.alertas', tipo='bajo') }}">
+    <div class="kpi-label"><span class="kpi-icon amber">{{ icon('triangle-alert','sm') }}</span>Bajo stock</div>
+    <div class="kpi-value">{{ bajo_stock }}</div><div class="kpi-sub">Avisale al encargado</div>
+  </a>
+  <a class="card kpi" href="{{ url_for('stock.alertas', tipo='agotados') }}">
+    <div class="kpi-label"><span class="kpi-icon red">{{ icon('package-x','sm') }}</span>Agotados</div>
+    <div class="kpi-value">{{ agotados }}</div><div class="kpi-sub">Productos sin stock</div>
+  </a>
+</div>
+{% endif %}
+
+<div class="card mb-2">
+  <div class="card-head"><h2>Accesos rápidos</h2></div>
+  <div class="card-body">
+    <div class="quick">
+      {% if current_user.tiene_permiso('ventas.crear') %}<a href="{{ url_for('ventas.pos') }}" class="primary">{{ icon('scan-barcode') }}Nueva venta</a>{% endif %}
+      {% if current_user.tiene_permiso('productos.ver') %}<a href="{{ url_for('productos.lista') }}">{{ icon('package') }}Productos</a>{% endif %}
+      {% if current_user.tiene_permiso('stock.ver') %}<a href="{{ url_for('stock.index') }}">{{ icon('boxes') }}Stock</a>{% endif %}
+      {% if current_user.tiene_permiso('caja.operar') %}<a href="{{ url_for('caja.index') }}">{{ icon('wallet') }}Caja</a>{% endif %}
+      {% if current_user.tiene_permiso('compras.gestionar') %}<a href="{{ url_for('compras.nueva') }}">{{ icon('shopping-bag') }}Compras</a>{% endif %}
+      {% if current_user.tiene_permiso('clientes.ver') %}<a href="{{ url_for('clientes.lista') }}">{{ icon('users') }}Clientes</a>{% endif %}
+      {% if current_user.tiene_permiso('proveedores.gestionar') %}<a href="{{ url_for('proveedores.lista') }}">{{ icon('truck') }}Proveedores</a>{% endif %}
+      {% if current_user.tiene_permiso('reportes.ver') %}<a href="{{ url_for('reportes.ventas') }}">{{ icon('chart-column') }}Reportes</a>{% endif %}
+    </div>
+  </div>
+</div>
+
+{% if financiero %}
+<div class="grid grid-main mb-2">
+  <div class="card">
+    <div class="card-head"><h2>Ventas de los últimos 7 días</h2><span class="muted small">Facturación y ganancia bruta</span></div>
+    <div class="card-body"><div class="chart-box"><canvas data-chart="ultimos7" aria-label="Ventas de los últimos 7 días"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Ventas por método de pago</h2><span class="muted small">Este mes</span></div>
+    <div class="card-body"><div class="chart-box"><canvas data-chart="metodos" aria-label="Ventas por método de pago"></canvas></div></div>
+  </div>
+</div>
+<div class="grid grid-2 mb-2">
+  <div class="card">
+    <div class="card-head"><h2>Productos más vendidos</h2><span class="muted small">Este mes, en unidades</span></div>
+    <div class="card-body"><div class="chart-box"><canvas data-chart="top" aria-label="Productos más vendidos"></canvas></div></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Ganancias por mes</h2><span class="muted small">Últimos 6 meses</span></div>
+    <div class="card-body"><div class="chart-box"><canvas data-chart="ganancias" aria-label="Ganancias por período"></canvas></div></div>
+  </div>
+</div>
+{% endif %}
+
+{% if alertas %}
+<div class="card">
+  <div class="card-head">
+    <h2>{{ icon('triangle-alert','sm') }} Reponer pronto</h2>
+    <a href="{{ url_for('stock.alertas', tipo='bajo') }}" class="btn btn-sm">Ver todos</a>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Mínimo</th><th></th></tr></thead>
+      <tbody>
+      {% for p in alertas %}
+        <tr>
+          <td><div class="prod-cell">{{ thumb(p) }}<div><b>{{ p.nombre }}</b><span>{{ p.categoria.nombre }}</span></div></div></td>
+          <td class="num"><b class="text-warning">{{ p.stock_actual|cantidad }}</b></td>
+          <td class="num">{{ p.stock_minimo|cantidad }}</td>
+          <td class="actions">{% if current_user.tiene_permiso('stock.ajustar') %}<a class="btn btn-sm" href="{{ url_for('stock.movimiento', producto_id=p.id) }}">Cargar stock</a>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if financiero %}<script type="application/json" id="datos-graficos">{{ graficos|tojson }}</script>{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if financiero %}
+<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endif %}
+{% endblock %}

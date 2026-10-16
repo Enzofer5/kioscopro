@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio, activo, confirmar_post %}
+{% block title %}Empleados{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Empleados</h1><p>Personal del negocio. Un empleado puede tener un usuario del sistema.</p></div>
+  <div class="page-actions"><a href="{{ url_for('empleados.nuevo') }}" class="btn btn-primary">{{ icon('user-plus','sm') }} Nuevo empleado</a></div>
+</div>
+<div class="card mb-2">
+  <form method="get" class="card-body filters">
+    <div class="field" style="grid-column:span 2"><label for="q">Buscar</label><input type="search" id="q" name="q" value="{{ request.args.get('q','') }}" placeholder="Nombre, DNI o puesto"></div>
+    <div class="field"><label for="estado">Estado</label><select id="estado" name="estado">
+      <option value="activos" {{ 'selected' if estado == 'activos' }}>Activos</option><option value="inactivos" {{ 'selected' if estado == 'inactivos' }}>Dados de baja</option><option value="todos" {{ 'selected' if estado == 'todos' }}>Todos</option></select></div>
+    <div class="actions"><button class="btn btn-primary" type="submit">{{ icon('search','sm') }} Buscar</button></div>
+  </form>
+</div>
+<div class="card">
+{% if not paginacion.items %}{{ vacio("No hay empleados", "", "briefcase") }}{% else %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Empleado</th><th>DNI</th><th>Puesto</th><th class="hide-sm">Ingreso</th><th class="hide-sm">Contacto</th><th>Usuario</th><th>Estado</th><th></th></tr></thead>
+    <tbody>{% for e in paginacion.items %}
+      <tr class="{{ 'row-muted' if not e.activo }}">
+        <td><b>{{ e.nombre_completo }}</b></td><td class="mono">{{ e.dni }}</td><td>{{ e.puesto }}</td>
+        <td class="hide-sm">{{ e.fecha_ingreso|solo_fecha }}</td>
+        <td class="hide-sm small">{{ e.telefono or '' }}{% if e.email %}<div class="muted">{{ e.email }}</div>{% endif %}</td>
+        <td>{% if e.usuario %}<span class="badge badge-brand">{{ e.usuario.username }} · {{ e.usuario.rol.nombre }}</span>{% else %}<span class="muted small">Sin usuario</span>{% endif %}</td>
+        <td>{{ activo(e.activo, 'Activo', 'Baja') }}</td>
+        <td class="actions">
+          <a class="btn btn-sm btn-icon" href="{{ url_for('empleados.editar', empleado_id=e.id) }}" aria-label="Editar">{{ icon('pencil','sm') }}</a>
+          {{ confirmar_post(url_for('empleados.estado', empleado_id=e.id), 'Dar de baja' if e.activo else 'Reactivar', 'btn btn-sm', '¿Dar de baja a ' ~ e.nombre ~ '? Si tiene usuario, también se desactivará.' if e.activo else '¿Reactivar al empleado?') }}
+        </td>
+      </tr>{% endfor %}</tbody>
+  </table></div>
+  {{ paginar(paginacion) }}
+{% endif %}
+</div>
+{% endblock %}

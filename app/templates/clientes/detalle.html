@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, activo, estado_venta, confirmar_post %}
+{% block title %}{{ cliente.nombre_completo }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ cliente.nombre }} {{ cliente.apellido }}</h1><p>{{ activo(cliente.activo) }} · Cliente desde {{ cliente.fecha_registro|solo_fecha }}</p></div>
+  <div class="page-actions">
+    <a href="{{ url_for('clientes.lista') }}" class="btn btn-ghost" data-action="back">{{ icon('arrow-left','sm') }} Volver</a>
+    {% if current_user.tiene_permiso('clientes.gestionar') %}
+      {{ confirmar_post(url_for('clientes.estado', cliente_id=cliente.id), 'Desactivar' if cliente.activo else 'Activar', 'btn btn-outline-danger' if cliente.activo else 'btn', '¿Cambiar el estado del cliente?', 'power') }}
+      <a href="{{ url_for('clientes.editar', cliente_id=cliente.id) }}" class="btn btn-primary">{{ icon('pencil','sm') }} Editar</a>
+    {% endif %}
+  </div>
+</div>
+<div class="grid grid-3 mb-2">
+  <div class="card kpi"><div class="kpi-label">Compras</div><div class="kpi-value">{{ stats.cantidad }}</div></div>
+  <div class="card kpi"><div class="kpi-label">Total gastado</div><div class="kpi-value">{{ stats.total|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label">Última compra</div><div class="kpi-value" style="font-size:1.2rem">{{ stats.ultima|fecha if stats.ultima else '—' }}</div></div>
+</div>
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-head"><h2>Historial de compras</h2></div>
+    {% if ventas.items %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>N°</th><th>Fecha</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody>{% for v in ventas.items %}
+        <tr><td class="mono">#{{ v.id }}</td><td>{{ v.fecha|fecha }}</td><td>{{ estado_venta(v.estado) }}</td><td class="num"><b>{{ v.total|moneda }}</b></td>
+        <td class="actions">{% if ver_ventas %}<a class="btn btn-sm" href="{{ url_for('ventas.detalle', venta_id=v.id) }}">Ver</a>{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {{ paginar(ventas) }}
+    {% else %}<div class="empty"><p class="mb-0">Este cliente todavía no tiene compras registradas.</p></div>{% endif %}
+  </div>
+  <div class="card"><div class="card-head"><h2>Datos</h2></div><div class="card-body">
+    <dl class="dl">
+      <dt>DNI</dt><dd class="mono">{{ cliente.dni or '—' }}</dd>
+      <dt>Teléfono</dt><dd>{{ cliente.telefono or '—' }}</dd>
+      <dt>Email</dt><dd>{{ cliente.email or '—' }}</dd>
+      <dt>Dirección</dt><dd>{{ cliente.direccion or '—' }}</dd>
+      <dt>Registrado</dt><dd>{{ cliente.fecha_registro|fecha }}</dd>
+    </dl>
+  </div></div>
+</div>
+{% endblock %}

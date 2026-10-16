@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Reporte de ganancias{% endblock %}
+{% block content %}
+{% include "reportes/_filtros.html" %}
+<div class="grid grid-4 kpis mb-2">
+  <div class="card kpi"><div class="kpi-label">Ventas netas</div><div class="kpi-value">{{ resumen.facturacion|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label">Costo de lo vendido</div><div class="kpi-value">{{ resumen.costo|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label">Ganancia bruta</div><div class="kpi-value">{{ resumen.ganancia_bruta|moneda }}</div><div class="kpi-sub">Precio de venta − precio de compra</div></div>
+  <div class="card kpi"><div class="kpi-label">Ganancia neta</div><div class="kpi-value {{ 'text-danger' if resumen.ganancia_neta < 0 else 'text-success' }}">{{ resumen.ganancia_neta|moneda }}</div><div class="kpi-sub">Bruta − gastos ({{ resumen.gastos|moneda }})</div></div>
+</div>
+<div class="card mb-2">
+  <div class="card-head" style="flex-wrap:wrap"><h2>Ganancias por {{ {'dia':'día','semana':'semana','mes':'mes'}[agrupacion] }}</h2>
+    <div class="chips no-print">{% for k, t in [('dia','Día'),('semana','Semana'),('mes','Mes')] %}<a class="chip {{ 'active' if agrupacion == k }}" href="{{ url_con(agrupacion=k) }}">{{ t }}</a>{% endfor %}</div></div>
+  <div class="card-body"><div class="chart-box"><canvas data-chart="ganancias" aria-label="Ganancias"></canvas></div></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Período</th><th class="num">Ventas</th><th class="num">Facturación</th><th class="num">Costo</th><th class="num">Ganancia bruta</th><th class="num">Gastos</th><th class="num">Ganancia neta</th></tr></thead>
+    <tbody>{% for f in filas|reverse %}
+      <tr><td>{{ f.etiqueta }}</td><td class="num">{{ f.cantidad }}</td><td class="num">{{ f.facturacion|moneda }}</td><td class="num muted">{{ f.costo|moneda }}</td>
+      <td class="num">{{ f.ganancia_bruta|moneda }}</td><td class="num text-danger">{{ f.gastos|moneda if f.gastos else '—' }}</td>
+      <td class="num"><b class="{{ 'text-danger' if f.ganancia_neta < 0 }}">{{ f.ganancia_neta|moneda }}</b></td></tr>
+    {% endfor %}</tbody>
+    <tfoot><tr><td>Total</td><td class="num">{{ resumen.cantidad }}</td><td class="num">{{ resumen.facturacion|moneda }}</td><td class="num">{{ resumen.costo|moneda }}</td><td class="num">{{ resumen.ganancia_bruta|moneda }}</td><td class="num">{{ resumen.gastos|moneda }}</td><td class="num">{{ resumen.ganancia_neta|moneda }}</td></tr></tfoot>
+  </table></div>
+</div>
+{% if gastos_cat %}
+<div class="card" style="max-width:640px">
+  <div class="card-head"><h2>Gastos por categoría</h2></div>
+  <div class="card-body"><ul class="list-plain">{% for g in gastos_cat %}<li><span>{{ g.categoria }}</span><b class="num">{{ g.total|moneda }}</b></li>{% endfor %}</ul></div>
+</div>
+{% endif %}
+<script type="application/json" id="datos-graficos">{{ {'ganancias': grafico}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script><script src="{{ url_for('static', filename='js/charts.js') }}"></script>{% endblock %}

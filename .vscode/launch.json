@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "KioscoPro (Flask, modo desarrollo)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "flask",
+      "env": { "FLASK_APP": "run.py" },
+      "args": ["run", "--debug", "--port", "5050"],
+      "jinja": true,
+      "justMyCode": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "KioscoPro (igual que INICIAR.bat)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/run.py",
+      "console": "integratedTerminal"
+    }
+  ]
+}

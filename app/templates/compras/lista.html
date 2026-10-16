@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio %}
+{% block title %}Compras{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Compras a proveedores</h1><p>Cada compra suma stock automáticamente.</p></div>
+  <div class="page-actions"><a href="{{ url_for('compras.nueva') }}" class="btn btn-primary">{{ icon('plus','sm') }} Nueva compra</a></div>
+</div>
+<div class="card mb-2">
+  <form method="get" class="card-body filters" data-clean>
+    <div class="field"><label for="numero">N° de compra</label><input id="numero" name="numero" inputmode="numeric" value="{{ request.args.get('numero','') }}"></div>
+    <div class="field"><label for="proveedor_id">Proveedor</label><select id="proveedor_id" name="proveedor_id"><option value="">Todos</option>
+      {% for p in proveedores %}<option value="{{ p.id }}" {{ 'selected' if request.args.get('proveedor_id') == p.id|string }}>{{ p.razon_social }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="comprobante">Comprobante</label><input id="comprobante" name="comprobante" value="{{ request.args.get('comprobante','') }}"></div>
+    <div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ request.args.get('desde','') }}"></div>
+    <div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ request.args.get('hasta','') }}"></div>
+    <div class="actions"><button type="submit" class="btn btn-primary">{{ icon('search','sm') }} Buscar</button><a href="{{ url_for('compras.lista') }}" class="btn btn-ghost">Limpiar</a></div>
+  </form>
+</div>
+<div class="card">
+{% if not buscado %}
+  {% call vacio("Buscá compras con los filtros", "", "shopping-bag") %}
+    <div class="chips" style="justify-content:center"><a class="chip" href="{{ url_for('compras.lista', desde=ahora().replace(day=1).strftime('%Y-%m-%d')) }}">Compras de este mes</a></div>
+  {% endcall %}
+{% elif not paginacion.items %}
+  {{ vacio("Sin resultados", "No hay compras con esos filtros.") }}
+{% else %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>N°</th><th>Fecha</th><th>Proveedor</th><th>Comprobante</th><th class="num">Ítems</th><th class="num">Total</th><th></th></tr></thead>
+    <tbody>
+    {% for c in paginacion.items %}
+      <tr>
+        <td class="mono">#{{ c.id }}</td><td>{{ c.fecha|solo_fecha }}</td>
+        <td><a href="{{ url_for('proveedores.detalle', proveedor_id=c.proveedor_id) }}">{{ c.proveedor.razon_social }}</a></td>
+        <td class="mono">{{ c.numero_comprobante or '—' }}</td><td class="num">{{ c.detalles|length }}</td>
+        <td class="num"><b>{{ c.total|moneda }}</b></td>
+        <td class="actions"><a class="btn btn-sm" href="{{ url_for('compras.detalle', compra_id=c.id) }}">{{ icon('eye','sm') }} Ver</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {{ paginar(paginacion) }}
+{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Mi perfil{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Mi perfil</h1><p>Tus datos de acceso al sistema.</p></div></div>
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-head"><h2>Datos personales</h2></div>
+    <form method="post" class="card-body">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        <div class="field col-6"><label class="req" for="nombre">Nombre</label><input id="nombre" name="nombre" value="{{ current_user.nombre }}" required maxlength="80"></div>
+        <div class="field col-6"><label class="req" for="apellido">Apellido</label><input id="apellido" name="apellido" value="{{ current_user.apellido }}" required maxlength="80"></div>
+        <div class="field col-12"><label class="req" for="email">Email</label><input type="email" id="email" name="email" value="{{ current_user.email }}" required maxlength="120"></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar cambios</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Cuenta</h2></div>
+    <div class="card-body">
+      <dl class="dl">
+        <dt>Usuario</dt><dd class="mono">{{ current_user.username }}</dd>
+        <dt>Rol</dt><dd><span class="badge badge-brand">{{ current_user.rol.nombre }}</span></dd>
+        {% if current_user.empleado %}<dt>Empleado</dt><dd>{{ current_user.empleado.nombre_completo }} · {{ current_user.empleado.puesto }}</dd>{% endif %}
+        <dt>Último acceso</dt><dd>{{ current_user.ultimo_acceso|fecha or '—' }}</dd>
+      </dl>
+      <a href="{{ url_for('auth.cambiar_password') }}" class="btn btn-block mt-2">{{ icon('key-round','sm') }} Cambiar contraseña</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

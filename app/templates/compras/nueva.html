@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Nueva compra{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Nueva compra</h1><p>Al confirmar se suma el stock y (opcionalmente) se actualizan los costos.</p></div>
+  <div class="page-actions"><a href="{{ url_for('compras.lista') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a></div>
+</div>
+{% if not proveedores %}
+<div class="alert alert-warning">{{ icon('triangle-alert') }}<span>Primero cargá un proveedor. <a href="{{ url_for('proveedores.nuevo') }}"><b>Crear proveedor</b></a></span></div>
+{% else %}
+<div id="compra" data-api-productos="{{ url_for('ventas.api_productos') }}" data-api-confirmar="{{ url_for('compras.api_confirmar') }}">
+  <div class="card mb-2">
+    <div class="card-body form-grid">
+      <div class="field col-4"><label class="req" for="proveedor">Proveedor</label>
+        <select id="proveedor" required><option value="">Elegí…</option>
+        {% for p in proveedores %}<option value="{{ p.id }}" {{ 'selected' if proveedor_id == p.id }}>{{ p.razon_social }}</option>{% endfor %}</select></div>
+      <div class="field col-3"><label class="req" for="fecha">Fecha</label><input type="date" id="fecha" value="{{ hoy.isoformat() }}" max="{{ hoy.isoformat() }}" required></div>
+      <div class="field col-3"><label for="comprobante">N° de comprobante</label><input id="comprobante" maxlength="40" placeholder="0001-00001234"></div>
+      <div class="field col-2" style="justify-content:flex-end"><label class="check"><input type="checkbox" id="actualizar-costos" checked> Actualizar costos</label></div>
+      <div class="field col-12"><label for="obs">Observaciones</label><input id="obs" maxlength="255"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head" style="flex-wrap:wrap">
+      <h2>Productos</h2>
+      <div class="ac" style="flex:1;max-width:520px;min-width:220px"><input type="search" id="buscar" placeholder="Agregar producto: nombre o código de barras" autocomplete="off"></div>
+    </div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Producto</th><th class="num">Costo actual</th><th class="num">Cantidad</th><th class="num">Precio de compra</th><th class="num">Subtotal</th><th></th></tr></thead>
+      <tbody id="items"></tbody>
+      <tfoot><tr><td colspan="4" class="right">TOTAL</td><td class="num" id="total">$ 0,00</td><td></td></tr></tfoot>
+    </table></div>
+    <div class="cart-empty" id="vacio">{{ icon('package-plus') }}<p class="mt-1 mb-0">Buscá productos para agregarlos a la compra.</p></div>
+    <div class="card-foot"><div class="form-actions" style="padding:0"><button type="button" class="btn btn-primary btn-lg" id="confirmar" disabled>{{ icon('check','sm') }} Confirmar compra</button></div></div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/compras.js') }}"></script>{% endblock %}

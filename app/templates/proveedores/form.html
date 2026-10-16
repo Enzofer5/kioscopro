@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, campo %}
+{% set ed = proveedor is not none %}
+{% macro v(c) -%}{{ form.get(c) if form.get(c) is not none else ((proveedor[c] or '') if ed else '') }}{%- endmacro %}
+{% block title %}{{ 'Editar proveedor' if ed else 'Nuevo proveedor' }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ self.title() }}</h1></div>
+  <div class="page-actions"><a href="{{ url_for('proveedores.detalle', proveedor_id=proveedor.id) if ed else url_for('proveedores.lista') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a></div>
+</div>
+<div class="card" style="max-width:860px">
+  <form method="post" class="card-body">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      {{ campo('razon_social', 'Razón social / nombre', v('razon_social'), req=True, cls='col-8', attrs='maxlength="150" autofocus') }}
+      {{ campo('cuit', 'CUIT', v('cuit'), cls='col-4', hint='11 dígitos, se valida el dígito verificador', attrs='maxlength="13" inputmode="numeric" placeholder="30-12345678-9"') }}
+      {{ campo('telefono', 'Teléfono', v('telefono'), tipo='tel', cls='col-4', attrs='maxlength="30"') }}
+      {{ campo('email', 'Email', v('email'), tipo='email', cls='col-4', attrs='maxlength="120"') }}
+      {{ campo('contacto', 'Persona de contacto', v('contacto'), cls='col-4', attrs='maxlength="100"') }}
+      {{ campo('direccion', 'Dirección', v('direccion'), cls='col-12', attrs='maxlength="200"') }}
+      <div class="field col-12"><label for="f-observaciones">Observaciones</label><textarea id="f-observaciones" name="observaciones" maxlength="2000">{{ v('observaciones') }}</textarea></div>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">{{ icon('check','sm') }} Guardar</button></div>
+  </form>
+</div>
+{% endblock %}

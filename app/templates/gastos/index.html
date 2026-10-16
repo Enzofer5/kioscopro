@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, paginar, vacio, confirmar_post %}
+{% block title %}Gastos{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Gastos del negocio</h1><p>Se descuentan de la ganancia en los reportes.</p></div>
+  <div class="page-actions"><a href="{{ url_for('gastos.categorias') }}" class="btn">{{ icon('tag','sm') }} Categorías</a></div>
+</div>
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-head" style="flex-wrap:wrap">
+      <h2>Gastos del {{ desde|solo_fecha }} al {{ hasta|solo_fecha }}</h2>
+      <span class="badge badge-danger" style="font-size:.9rem">Total {{ total|moneda }}</span>
+    </div>
+    <form method="get" class="card-body filters" style="border-bottom:1px solid var(--border)">
+      <div class="field"><label for="desde">Desde</label><input type="date" id="desde" name="desde" value="{{ desde.isoformat() }}"></div>
+      <div class="field"><label for="hasta">Hasta</label><input type="date" id="hasta" name="hasta" value="{{ hasta.isoformat() }}"></div>
+      <div class="field"><label for="fcat">Categoría</label><select id="fcat" name="categoria_id"><option value="">Todas</option>
+        {% for c in categorias %}<option value="{{ c.id }}" {{ 'selected' if request.args.get('categoria_id') == c.id|string }}>{{ c.nombre }}</option>{% endfor %}</select></div>
+      <div class="actions"><button class="btn btn-primary" type="submit">{{ icon('funnel','sm') }} Filtrar</button></div>
+    </form>
+    {% if not paginacion.items %}{{ vacio("Sin gastos en el período", "", "receipt") }}{% else %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th class="hide-sm">Medio</th><th class="hide-sm">Usuario</th><th class="num">Monto</th><th></th></tr></thead>
+      <tbody>{% for g in paginacion.items %}
+        <tr><td class="nowrap">{{ g.fecha|solo_fecha }}</td><td><span class="badge">{{ g.categoria.nombre }}</span></td>
+          <td>{{ g.descripcion }}{% if g.movimiento_caja %} <span class="badge badge-info" title="Salió de la caja #{{ g.movimiento_caja.caja_id }}">Caja</span>{% endif %}</td>
+          <td class="hide-sm">{{ g.metodo.nombre }}</td><td class="hide-sm small">{{ g.usuario.nombre }}</td>
+          <td class="num"><b>{{ g.monto|moneda }}</b></td>
+          <td class="actions">{% if not g.movimiento_caja %}{{ confirmar_post(url_for('gastos.eliminar', gasto_id=g.id), '', 'btn btn-sm btn-icon btn-ghost', '¿Eliminar este gasto?', 'trash-2') }}{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {{ paginar(paginacion) }}
+    {% endif %}
+  </div>
+  <div class="card" style="align-self:start">
+    <div class="card-head"><h2>Registrar gasto</h2></div>
+    <form method="post" class="card-body">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        <div class="field col-12"><label class="req" for="categoria_id">Categoría</label><select id="categoria_id" name="categoria_id" required><option value="">Elegí…</option>
+          {% for c in categorias %}<option value="{{ c.id }}" {{ 'selected' if form.get('categoria_id') == c.id|string }}>{{ c.nombre }}</option>{% endfor %}</select></div>
+        <div class="field col-12"><label class="req" for="descripcion">Descripción</label><input id="descripcion" name="descripcion" required maxlength="200" value="{{ form.get('descripcion','') }}" placeholder="Ej.: factura de luz septiembre"></div>
+        <div class="field col-6"><label class="req" for="monto">Monto</label><div class="input-group"><span>$</span><input id="monto" name="monto" inputmode="decimal" required value="{{ form.get('monto','') }}"></div></div>
+        <div class="field col-6"><label class="req" for="fecha">Fecha</label><input type="date" id="fecha" name="fecha" value="{{ form.get('fecha', hoy.isoformat()) }}" max="{{ hoy.isoformat() }}" required></div>
+        <div class="field col-12"><label class="req" for="metodo_pago_id">Método de pago</label><select id="metodo_pago_id" name="metodo_pago_id" required>
+          {% for m in metodos %}<option value="{{ m.id }}" {{ 'selected' if form.get('metodo_pago_id') == m.id|string }}>{{ m.nombre }}</option>{% endfor %}</select></div>
+        <div class="field col-12"><label class="check"><input type="checkbox" name="desde_caja" value="1" {{ 'checked' if not form or form.get('desde_caja') }}> Si es en efectivo, sale de la caja abierta</label>
+          <span class="hint">Genera un egreso en la caja actual para que el arqueo cierre.</span></div>
+      </div>
+      <div class="form-actions"><button type="submit" class="btn btn-primary">{{ icon('plus','sm') }} Registrar gasto</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}

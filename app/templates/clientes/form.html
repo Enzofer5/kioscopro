@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon, campo %}
+{% set ed = cliente is not none %}
+{% macro v(c) -%}{{ form.get(c) if form.get(c) is not none else ((cliente[c] or '') if ed else '') }}{%- endmacro %}
+{% block title %}{{ 'Editar cliente' if ed else 'Nuevo cliente' }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>{{ self.title() }}</h1></div>
+  <div class="page-actions"><a href="{{ url_for('clientes.detalle', cliente_id=cliente.id) if ed else url_for('clientes.lista') }}" class="btn btn-ghost">{{ icon('arrow-left','sm') }} Volver</a></div>
+</div>
+<div class="card" style="max-width:860px">
+  <form method="post" class="card-body">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      {{ campo('nombre', 'Nombre', v('nombre'), req=True, attrs='maxlength="80" autofocus') }}
+      {{ campo('apellido', 'Apellido', v('apellido'), req=True, attrs='maxlength="80"') }}
+      {{ campo('dni', 'DNI', v('dni'), cls='col-4', attrs='maxlength="15" inputmode="numeric"') }}
+      {{ campo('telefono', 'Teléfono', v('telefono'), tipo='tel', cls='col-4', attrs='maxlength="30"') }}
+      {{ campo('email', 'Email', v('email'), tipo='email', cls='col-4', attrs='maxlength="120"') }}
+      {{ campo('direccion', 'Dirección', v('direccion'), cls='col-12', attrs='maxlength="200"') }}
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">{{ icon('check','sm') }} Guardar</button></div>
+  </form>
+</div>
+{% endblock %}

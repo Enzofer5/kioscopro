@@ -1,0 +1,22 @@
+{% extends "auth/base_auth.html" %}
+{% block title %}Ingresar{% endblock %}
+{% block content %}
+<h1>Ingresar</h1>
+<p class="sub">Usá tu usuario o email y tu contraseña.</p>
+<form method="post" autocomplete="on">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="field">
+    <label for="usuario">Usuario o email</label>
+    <input type="text" id="usuario" name="usuario" value="{{ usuario }}" required autofocus autocomplete="username" maxlength="120">
+  </div>
+  <div class="field">
+    <label for="password">Contraseña</label>
+    <input type="password" id="password" name="password" required autocomplete="current-password" maxlength="128">
+  </div>
+  <div class="flex between mb-2">
+    <label class="check"><input type="checkbox" name="recordar" value="1"> Recordarme</label>
+    <a href="{{ url_for('auth.recuperar') }}" class="small">¿Olvidaste tu contraseña?</a>
+  </div>
+  <button type="submit" class="btn btn-primary btn-lg btn-block">Ingresar</button>
+</form>
+{% endblock %}

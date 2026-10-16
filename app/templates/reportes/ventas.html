@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "partials/macros.html" import icon %}
+{% block title %}Reporte de ventas{% endblock %}
+{% block content %}
+{% include "reportes/_filtros.html" %}
+<div class="grid grid-4 kpis mb-2">
+  <div class="card kpi"><div class="kpi-label"><span class="kpi-icon">{{ icon('receipt','sm') }}</span>Cantidad de ventas</div><div class="kpi-value">{{ resumen.cantidad }}</div></div>
+  <div class="card kpi"><div class="kpi-label"><span class="kpi-icon blue">{{ icon('circle-dollar-sign','sm') }}</span>Facturación</div><div class="kpi-value">{{ resumen.facturacion|moneda }}</div><div class="kpi-sub">Descuentos otorgados {{ resumen.descuentos|moneda }}</div></div>
+  <div class="card kpi"><div class="kpi-label"><span class="kpi-icon amber">{{ icon('trending-up','sm') }}</span>Ganancia bruta</div><div class="kpi-value">{{ resumen.ganancia_bruta|moneda }}</div><div class="kpi-sub">Margen {{ resumen.margen_pct|pct }}</div></div>
+  <div class="card kpi"><div class="kpi-label"><span class="kpi-icon">{{ icon('shopping-cart','sm') }}</span>Ticket promedio</div><div class="kpi-value">{{ resumen.ticket_promedio|moneda }}</div></div>
+</div>
+<div class="card mb-2">
+  <div class="card-head"><h2>Facturación diaria</h2></div>
+  <div class="card-body"><div class="chart-box"><canvas data-chart="ventasDiarias" data-source="diaria" aria-label="Facturación diaria"></canvas></div></div>
+</div>
+<div class="card">
+  <div class="card-head"><h2>Detalle por día</h2></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Día</th><th class="num">Ventas</th><th class="num">Facturación</th><th class="num">Costo</th><th class="num">Ganancia bruta</th><th class="num">Ticket prom.</th></tr></thead>
+    <tbody>{% for f in serie|reverse %}{% if f.cantidad %}
+      <tr><td>{{ f.fecha|solo_fecha }}</td><td class="num">{{ f.cantidad }}</td><td class="num">{{ f.facturacion|moneda }}</td><td class="num muted">{{ f.costo|moneda }}</td>
+      <td class="num"><b>{{ f.ganancia_bruta|moneda }}</b></td><td class="num">{{ (f.facturacion / f.cantidad)|moneda }}</td></tr>
+    {% endif %}{% endfor %}</tbody>
+    <tfoot><tr><td>Total</td><td class="num">{{ resumen.cantidad }}</td><td class="num">{{ resumen.facturacion|moneda }}</td><td class="num">{{ resumen.costo|moneda }}</td><td class="num">{{ resumen.ganancia_bruta|moneda }}</td><td class="num">{{ resumen.ticket_promedio|moneda }}</td></tr></tfoot>
+  </table></div>
+</div>
+<script type="application/json" id="datos-graficos">{{ {'diaria': grafico}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script><script src="{{ url_for('static', filename='js/charts.js') }}"></script>{% endblock %}
